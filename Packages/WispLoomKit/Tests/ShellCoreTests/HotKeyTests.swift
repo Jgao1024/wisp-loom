@@ -10,12 +10,12 @@ struct HotKeyTests {
     }
 
     @Test func storedFallsBackToDefault() throws {
-        let defaults = try #require(UserDefaults(suiteName: "orbit.tests." + UUID().uuidString))
+        let defaults = try #require(UserDefaults(suiteName: "wisploom.tests." + UUID().uuidString))
         #expect(HotKey.stored(in: defaults) == .default)
     }
 
     @Test func roundTrip() throws {
-        let defaults = try #require(UserDefaults(suiteName: "orbit.tests." + UUID().uuidString))
+        let defaults = try #require(UserDefaults(suiteName: "wisploom.tests." + UUID().uuidString))
         let hotKey = HotKey(keyCode: 40, modifiers: [.option, .command], key: "K")
         hotKey.store(in: defaults)
         #expect(HotKey.stored(in: defaults) == hotKey)

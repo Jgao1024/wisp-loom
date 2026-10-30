@@ -1,4 +1,4 @@
-name: Orbit
+name: WispLoom
 options:
   deploymentTarget:
     macOS: "27.0"
@@ -14,15 +14,15 @@ settings:
     Release:
       SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
 packages:
-  OrbitKit:
-    path: Packages/OrbitKit
+  WispLoomKit:
+    path: Packages/WispLoomKit
 targets:
-  Orbit:
+  WispLoom:
     type: application
     platform: macOS
     sources: [App]
     dependencies:
-      - package: OrbitKit
+      - package: WispLoomKit
         products: [ShellCore, ShellUI, ShellPlatform]
     info:
       path: App/Info.plist
@@ -31,8 +31,9 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSHighResolutionCapable: true
         LSUIElement: true
+        CFBundleDisplayName: Wisp Loom
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.orbit
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.wisploom
         ENABLE_HARDENED_RUNTIME: YES
         CODE_SIGN_IDENTITY: "-"

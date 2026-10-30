@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct OrbitApp: App {
+struct WispLoomApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 
     /// Only here to keep the default main menu (copy/paste in text fields); the UI is AppKit-hosted.

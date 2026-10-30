@@ -1,6 +1,6 @@
-PACKAGE := Packages/OrbitKit
+PACKAGE := Packages/WispLoomKit
 DERIVED := build/DerivedData
-APP := $(DERIVED)/Build/Products/Debug/Orbit.app
+APP := $(DERIVED)/Build/Products/Debug/WispLoom.app
 SOURCES := App $(PACKAGE)
 
 .PHONY: bootstrap project build run test lint format clean
@@ -14,13 +14,13 @@ project:
 	xcodegen generate
 
 build: project
-	xcodebuild -project Orbit.xcodeproj -scheme Orbit -configuration Debug -destination 'platform=macOS,arch=arm64' -derivedDataPath $(DERIVED) -quiet build
+	xcodebuild -project WispLoom.xcodeproj -scheme WispLoom -configuration Debug -destination 'platform=macOS,arch=arm64' -derivedDataPath $(DERIVED) -quiet build
 
 run: build
 	open $(APP)
 
 test:
-	swift test --package-path $(PACKAGE) --scratch-path build/OrbitKit
+	swift test --package-path $(PACKAGE) --scratch-path build/WispLoomKit
 
 lint:
 	swift format lint --strict --recursive $(SOURCES)

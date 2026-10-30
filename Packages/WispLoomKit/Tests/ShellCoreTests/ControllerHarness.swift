@@ -13,7 +13,7 @@ final class ControllerHarness {
     let controller: ShellController
 
     init() {
-        defaults = UserDefaults(suiteName: "orbit.tests." + UUID().uuidString)!
+        defaults = UserDefaults(suiteName: "wisploom.tests." + UUID().uuidString)!
         state = ShellState(apps: [notes])
         controller = ShellController(
             state: state, windows: windows, presenter: presenter, hotKeys: hotKeys, defaults: defaults

@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "OrbitKit",
+    name: "WispLoomKit",
     platforms: [.macOS(.v27)],
     products: ["ShellCore", "ShellUI", "ShellPlatform"].map { .library(name: $0, targets: [$0]) },
     targets: [

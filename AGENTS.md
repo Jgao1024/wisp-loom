@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Orbit：macOS 快捷键浮窗启动器（SwiftUI + AppKit），计划开源。功能清单见 `FEATURES.md`。
+Wisp Loom：macOS 快捷键浮窗启动器（SwiftUI + AppKit），计划开源。功能清单见 `FEATURES.md`。
 
 ## 规范
 

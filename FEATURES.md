@@ -1,6 +1,6 @@
 # Features
 
-Orbit 是 macOS 上的快捷键浮窗启动器。没有自己的桌面、Dock 或主界面，只有一个浮窗和按需打开的原生 app 窗口。
+Wisp Loom 是 macOS 上的快捷键浮窗启动器。没有自己的桌面、Dock 或主界面，只有一个浮窗和按需打开的原生 app 窗口。
 
 ## 浮窗
 

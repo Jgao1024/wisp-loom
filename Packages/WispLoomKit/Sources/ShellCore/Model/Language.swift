@@ -8,7 +8,7 @@ public enum Language: String, CaseIterable, Identifiable, Sendable, StoredSettin
     public var name: String { self == .zhHans ? "中文" : "English" }
     public var locale: Locale { Locale(identifier: rawValue) }
 
-    public static let storageKey = "orbit.language"
+    public static let storageKey = "wisploom.language"
     public static let `default` = Language.zhHans
 
     /// For AppKit strings; SwiftUI text follows `locale` through the environment.

@@ -5,12 +5,12 @@ import Testing
 
 struct StoredSettingTests {
     @Test func languageDefaultsToChinese() throws {
-        let defaults = try #require(UserDefaults(suiteName: "orbit.tests." + UUID().uuidString))
+        let defaults = try #require(UserDefaults(suiteName: "wisploom.tests." + UUID().uuidString))
         #expect(Language.stored(in: defaults) == .zhHans)
     }
 
     @Test func launcherStyleRoundTrip() throws {
-        let defaults = try #require(UserDefaults(suiteName: "orbit.tests." + UUID().uuidString))
+        let defaults = try #require(UserDefaults(suiteName: "wisploom.tests." + UUID().uuidString))
         LauncherStyle.grid.store(in: defaults)
         #expect(LauncherStyle.stored(in: defaults) == .grid)
     }

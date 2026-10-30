@@ -3,6 +3,6 @@ public enum LauncherStyle: String, CaseIterable, Identifiable, Sendable, StoredS
 
     public var id: String { rawValue }
 
-    public static let storageKey = "orbit.launcherStyle"
+    public static let storageKey = "wisploom.launcherStyle"
     public static let `default` = LauncherStyle.grid
 }

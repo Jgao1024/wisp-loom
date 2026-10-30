@@ -32,5 +32,5 @@ public struct HotKey: Sendable, Hashable, StoredSetting {
 
     public static let `default` = HotKey(keyCode: 49, modifiers: .option, key: "Space")
 
-    public static let storageKey = "orbit.hotKey"
+    public static let storageKey = "wisploom.hotKey"
 }
