@@ -1,6 +1,6 @@
 import "@wisp/ui/style.css";
 import {
-  Button, Composer, ContextMenu, Detail, Empty, List, Markdown, Menu, Pane, Picker, Row, Scroll, Search, Section,
+  Button, Composer, ContextMenu, Detail, Empty, List, Markdown, Menu, Pane, Picker, Row, Scroll, Section,
   SecureField, Settings, Sidebar, Stack, Text, TextField, Toggle, Window, run, useCommands, useEffect, useMemo, usePersisted,
   useRef, useSidebar, useState, useStream, useToolbar,
 } from "@wisp/ui";
@@ -188,6 +188,7 @@ function Agent() {
           menu: agents.map((agent) => ({ id: `agent-${agent}`, title: agent })),
         },
         { id: "share", symbol: "square.and.arrow.up", help: "分享" },
+        { id: "search", search: true, placeholder: "搜索对话" },
       ],
     },
     {
@@ -199,6 +200,7 @@ function Agent() {
       share: copyMarkdown,
       ...Object.fromEntries(agents.map((agent) => [`agent-${agent}`, () => setAgent(agent)])),
     },
+    setQuery,
   );
 
   return (
@@ -209,9 +211,6 @@ function Agent() {
       sidebar={sidebar}
     >
       <Sidebar>
-        <div class="sidebar-search">
-          <Search value={query} placeholder="搜索对话" onInput={setQuery} />
-        </div>
         <List selection={activeId} onSelect={setActiveId}>
           {groups.map((group) => {
             const items = filtered.filter((conversation) => conversation.group === group.id);

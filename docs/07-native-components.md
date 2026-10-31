@@ -193,7 +193,7 @@ toolbar.apply(spec)                  // 收到 {type:"toolbar", spec} 后调用
 | app 设置表单控件 | Web | Web（阶段 5 再议） |
 | 侧栏行/列表、内容列表、详情 | WKWebView + 设计系统 | Web |
 | 消息、Markdown、Composer | WKWebView | Web |
-| Agent 侧栏搜索 | Web `Search` | Web |
+| Agent 对话搜索 | 原生 `NSSearchToolbarItem`（toolbar） | 原生（阶段 4） |
 | 页内 `ContextMenu` | 宿主 `NSMenu`（共享 `NativeMenuFactory`） | 原生 |
 | 页内 `Menu` 下拉 | Web popover | Web |
 | Composer 发送/加号/模型菜单 | Web | Web |
@@ -251,13 +251,25 @@ SidebarSpec { sections: [{ id, title, rows: [
 1. **设置窗口分类标签栏（已完成）**：`<Settings>` 的 Web `.tabs` 已改为原生 toolbar tab；新增 `ToolbarSpec.tabs`、`useTabs` 和 `tabSelected` 回传。设置表单仍留在 Web。
 2. **页内 `ContextMenu`（已完成）**：右击时页面把 `{items:[{id,title,destructive,disabled}]}` 发给宿主，宿主用 `NSMenu` 在鼠标位置弹出，选中回传 `contextMenuAction`。Escape/点击外部/深色模式由 AppKit 处理；`Menu` 下拉仍留 Web。
 
+### 阶段 4 PoC：Agent 对话搜索改原生 toolbar 搜索
+
+结论：**做，但只把搜索框迁到原生 toolbar**，不在 Web 侧栏上叠原生视图。
+
+- **为什么**：`NSSearchField` 有系统焦点环、清除按钮、Escape、深色模式和辅助功能；原来的 Web `Search` 只是仿制输入框。
+- **对内容 WebView 的影响**：搜索控件移出内容区，侧栏列表、过滤和空状态仍是 Web；单 WebView、CSS 布局和滚动都不变，不需要在 Web 上做坐标/裁剪同步。
+- **是否通用**：用的是已有的 `useToolbar` search item；页面只传 `{ id, search: true, placeholder }`，文本经 `onSearch` 回传。宿主没有新增代码，也没有 app 分支。
+- **是否 per-app Swift**：否。
+- **范围**：只改 Agent 的搜索；Composer、列表、消息、设置表单仍 Web。
+- **代价**：搜索从侧栏顶部移到标题栏（Mail/Notes 的做法）。如果产品要求搜索必须留在侧栏内部，那就只能走 A/B（原生侧栏或第二个 WebView），不在本阶段范围。
+- **结果**：Agent 的侧栏 `Search` 删除，toolbar trailing 增加原生搜索；输入“统计”后侧栏只剩匹配对话。
+
 ### 后续 C 方向（需要先决策）
 
 - 原生侧栏 / `NSSplitView`（见第 5 节）。
 - 原生列表、内容列表、详情。
 - 原生 Composer、发送/加号/模型菜单。
 - 原生 Markdown / 消息渲染。
-- 原生 Agent 侧栏搜索。
+- 侧栏内嵌原生搜索（若必须留在侧栏；当前已改为 toolbar 原生搜索）。
 - 原生设置表单控件（开关/下拉/输入框）——需要通用表单模型，否则会变成 per-app Swift。
 
 这些不做进 Phase 1/2 的默认范围；每次只选一个，先写设计再动代码。

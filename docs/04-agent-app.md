@@ -8,10 +8,10 @@
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
-│ ●●●   [新建]  对话标题 / Agent · Model      [⋯] [Agent ▾] [⇪] │ ← 原生 NSToolbar
+│ ●●●   [新建]  对话标题 / Agent · Model   [⋯] [Agent ▾] [⇪] [🔍] │ ← 原生 NSToolbar
 ├───────────────┬──────────────────────────────────────────────┤
-│ 🔍 搜索        │  消息列表（Scroll anchor=bottom）               │
-│ 对话           │   用户消息：右侧气泡                            │
+│ 对话           │  消息列表（Scroll anchor=bottom）               │
+│  今天          │   用户消息：右侧气泡                            │
 │  今天          │   助手消息：无气泡，全宽 Markdown                │
 │   · 统计代码量  │   思考：可折叠的次要文本                         │
 │  昨天          │   工具调用：可折叠行（M3 起）                     │
@@ -25,8 +25,8 @@
 
 | 区域 | 内容 | 实现 |
 |---|---|---|
-| 窗口 toolbar | 左：侧栏折叠、新建对话；中间：窗口标题（当前对话）/ 副标题（Agent · Model）；右：`⋯` 菜单（重命名、复制为 Markdown、删除）、Agent 选择、分享 | `[Swift]` 原生 `NSToolbar`，页面用 `useToolbar` 声明；侧栏状态用 `useSidebar`；见 06 |
-| 侧栏 | 搜索；对话列表按今天 / 昨天分组；右键：重命名、删除；不再放“新建对话”行（与 toolbar 重复） | `[TS]` `Sidebar` + `Search` + `List` + `Section`；右键用 `ContextMenu`，宿主弹原生 `NSMenu` |
+| 窗口 toolbar | 左：侧栏折叠、新建对话；中间：窗口标题（当前对话）/ 副标题（Agent · Model）；右：`⋯` 菜单（重命名、复制为 Markdown、删除）、Agent 选择、分享、搜索 | `[Swift]` 原生 `NSToolbar`，页面用 `useToolbar` 声明；搜索是原生 `NSSearchField`；侧栏状态用 `useSidebar`；见 06 |
+| 侧栏 | 对话列表按今天 / 昨天分组；右键：重命名、删除；不再放“新建对话”行（与 toolbar 重复） | `[TS]` `Sidebar` + `List` + `Section`；右键用 `ContextMenu`，宿主弹原生 `NSMenu` |
 | 消息区 | 流式输出；生成中可以停止；每条助手消息悬停显示拷贝、重新生成 | `[TS]` `Scroll`（`anchor="bottom"`）+ `Markdown`，文本来自 `useStream` |
 | 输入区 | 回车发送、⇧回车换行；左 `+`（附件，M3）；右模型选择（含思考强度）+ 发送/停止按钮 | `[TS]` `Composer` + `Menu` |
 | 空状态 | 新对话：显示当前 Agent 名称和简介 | `[TS]` `Empty` |
@@ -34,8 +34,8 @@
 **原生/Web 范围（Phase 1）：**
 
 - 原生：窗口、红绿灯、标题栏、标题/副标题、toolbar 按钮/菜单/搜索/侧栏折叠、菜单栏。
-- Web：侧栏列表、内容列表、消息/Markdown、Composer、页内右键菜单、设置表单。
-- 设置窗口的分类标签已是原生 toolbar tab（`Settings` 内部用 `useTabs`）；表单仍是 Web。
+- Web：侧栏列表、内容列表、消息/Markdown、Composer、设置表单。
+- 原生：右键菜单、设置分类标签、对话搜索（toolbar 的 `NSSearchField`）。
 - 内容组件只改 `ui/`；原生 toolbar 是宿主一次实现 + `useToolbar` 声明，不做 per-app Swift。
 
 图 5 的“项目 / 任务”分组、“自主模式”、用户头像不进第一版。

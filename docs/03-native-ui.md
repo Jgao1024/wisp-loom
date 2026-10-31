@@ -91,7 +91,7 @@ run(<Main />, (
 | `Sidebar` `Content` `Detail` | 三种内容列，不再有标题/工具栏 | 只有子节点 |
 | `useToolbar` | 原生 toolbar 声明（hook，不是组件） | `spec` `handlers` `onSearch`；见 06 |
 | `useSidebar` | 侧栏显示状态 + 切换函数（hook） | `initial`；结果接 `Window sidebar` 和 `sidebar` toolbar item |
-| `Search` | 内容区搜索框（Agent 侧栏用） | `value` `placeholder` `onInput` |
+| `Search` | 内容区搜索框（需要留在内容里时用；Agent 已改用原生 toolbar 搜索） | `value` `placeholder` `onInput` |
 | `Button` `Menu` | 内容区按钮、弹出菜单（不用于窗口 toolbar） | `title` `symbol` `role` `prominent` `disabled` `help` `onAction` |
 | `List` `Section` `Row` | 列表（上下键选择） | `selection` `onSelect`；`Row`：`value` `title` `subtitle` `symbol` `badge` `selected` |
 | `SidebarTiles` `Tile` | 卡片侧栏 | `title` `symbol` `count` `tint` `selected` `onAction` |
