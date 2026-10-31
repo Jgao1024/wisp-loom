@@ -198,6 +198,8 @@ useToolbar(
 
 ## 10. Phase 1 实现
 
+可复用原生组件的登记表、app/宿主两层的用法、当前原生/Web 边界和后续迁移清单见 `docs/07-native-components.md`；后续迁移的新会话提示词见 `docs/08-native-migration-prompts.md`。
+
 - `[Swift]` `ShellCore/Model/ToolbarSpec.swift`：`ToolbarSpec` / `ToolbarItem` / `ToolbarMenuItem`，纯 `Decodable`，不 import AppKit。
 - `[Swift]` `ShellUI/Toolbar/NativeToolbarController.swift`：唯一的 toolbar 实现，认识 id 不认识 app。leading item 标记 `isNavigational`（AppKit 只有导航项才会排到红绿灯一侧）；结构变化才换 `NSToolbar`，只变 `disabled` 时原地更新，搜索文本由 `NSSearchField` 持有；空 spec 也保留一个 flexible space，保证标题栏高度。
 - `[Swift]` `AppPageController` 在 `viewDidAppear` 给主窗口装 toolbar（设置窗口不装）；`.toolbar` 可先于窗口到达，spec 会保存到安装后应用。

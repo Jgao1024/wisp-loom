@@ -1,5 +1,7 @@
 # 03 · 原生界面规范
 
+原生组件的登记、复用方式和“为什么侧栏不用 NSSplitView”见 `docs/07-native-components.md`。
+
 所有 app 的布局、内容都照 macOS 原生应用（手记、密码、备忘录、邮件）来做。窗口级控件（标题栏、工具栏、菜单；设置标签栏 Phase 2）由宿主用 AppKit 原生实现；内容区在 WKWebView 里由 TS 渲染，只能用设计系统组件，样式表只用系统字体、系统颜色和少量间距令牌。完整契约见 `docs/06-native-toolbar.md`。
 
 判断标准：窗口级控件必须是 `NSToolbar` / `NSButton` / `NSMenu` / `NSSearchField` 实例；内容区截图和同类系统 app 放一起看不出明显差别，深浅色、强调色、辅助功能跟随系统。
