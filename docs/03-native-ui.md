@@ -1,40 +1,39 @@
 # 03 · 原生界面规范
 
-所有 app 的布局、按钮、菜单、设置都照 macOS 原生应用（手记、密码、备忘录、邮件）来做。界面在 WKWebView 里由 TS 渲染，原生观感靠两件事保证：窗口、菜单、设置窗口由宿主用 AppKit 创建；页面只能用设计系统组件，样式表只用系统字体、系统颜色和少量间距令牌。
+所有 app 的布局、内容都照 macOS 原生应用（手记、密码、备忘录、邮件）来做。窗口级控件（标题栏、工具栏、菜单；设置标签栏 Phase 2）由宿主用 AppKit 原生实现；内容区在 WKWebView 里由 TS 渲染，只能用设计系统组件，样式表只用系统字体、系统颜色和少量间距令牌。完整契约见 `docs/06-native-toolbar.md`。
 
-判断标准：截图和同类系统 app 放一起看不出差别；深浅色、强调色、辅助功能、键盘操作全部自动跟随。
+判断标准：窗口级控件必须是 `NSToolbar` / `NSButton` / `NSMenu` / `NSSearchField` 实例；内容区截图和同类系统 app 放一起看不出明显差别，深浅色、强调色、辅助功能跟随系统。
 
 ## 1. 窗口布局
 
-窗口统一 `.titled + .fullSizeContentView`，标题栏透明，红绿灯在左上。标题条和工具栏由页面（设计系统）绘制，按钮是设计系统的胶囊；窗口、菜单栏、设置窗口由宿主用 AppKit 创建。
+窗口统一 `.titled + .fullSizeContentView`，标题栏透明，红绿灯在左上。标题栏和工具栏由宿主用 `NSToolbar` 原生创建并管理拖动/双击缩放；页面不再绘制标题条或 toolbar，内容列顶部留出 `--titlebar`（52pt）的原生 toolbar 高度。
 
 ### 1.1 两栏（参考手记，图 1）
 
 ```text
-┌──────────┬─────────────────────────────────────────────┐
-│ ●●●   [▥]│ [‹]  标题           [▢ ◎ ➤ ▮]     [格式 Ⓐ] (✓) │
-│          │                                             │
-│ 侧栏     │ 详情                                         │
-└──────────┴─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│ ●●●   [新建] [侧栏]   标题 / 副标题        [⋯] [Agent ▾] [⇪] │ ← 原生 NSToolbar
+├──────────┬──────────────────────────────────────────────┤
+│ 侧栏     │ 详情 / 内容                                   │
+└──────────┴──────────────────────────────────────────────┘
 ```
 
-- `Window columns={2}`：侧栏 + 详情。窗口是 `.fullSizeContentView`，WebView 铺满整个窗口，背后是 `NSVisualEffectView(.sidebar)`；侧栏列不画背景，所以显示系统侧栏材质，内容列和详情列是不透明的 `Canvas`。
-- 标题栏区域属于页面：每列顶部有一条可拖动的标题条（拖动、双击缩放由宿主执行），红绿灯落在侧栏顶部；侧栏没有标题时也保留同高度的空标题条，同样可拖动。
-- 列的标题和工具栏用 `Content` / `Detail` 的 `title`、`subtitle`、`toolbar` 属性；相邻按钮用 `ToolbarGroup` 合成一个胶囊。
+- `Window columns={2}`：侧栏 + 详情。窗口是 `.fullSizeContentView`，WebView 铺满整个窗口，背后是 `NSVisualEffectView(.sidebar)`；侧栏列不画背景，所以显示系统侧栏材质，内容列和详情列是不透明的 `Canvas`，一直铺到窗口顶，原生 toolbar 透明地盖在上面。
+- 窗口标题/副标题由 `Window title/subtitle` 设置，显示在原生 toolbar 里；页面不再有列标题条。
+- 工具栏用 `useToolbar(spec, handlers, onSearch?)` 声明；按钮、菜单、搜索都是原生控件。红绿灯、拖动、双击缩放全由宿主处理；侧栏折叠按钮等有 app 用到再加。
 
 ### 1.2 三栏（参考密码，图 2）
 
 ```text
-┌──────────┬──────────────────┬─────────────────────────┐
-│ ●●●   [▥]│ 全部      [⇅ ＋]  │ [🔍 搜索              ]  │
-│ 侧栏     │ 68 个项目          │                         │
-│          │ 列表              │ 详情 / 空状态             │
+┌─────────────────────────────────────────────────────────┐
+│ ●●●   [新建]           全部 / 68 个项目      [⇅] [＋] [🔍] │ ← 原生 NSToolbar
+├──────────┬──────────────────┬─────────────────────────┤
+│ 侧栏     │ 列表              │ 详情 / 空状态             │
 └──────────┴──────────────────┴─────────────────────────┘
 ```
 
 - `Window columns={3}`：侧栏 + 内容列表 + 详情。
-- 中栏标题 + 副标题；排序、新增按钮放在中栏的 `toolbar`。
-- 搜索是详情列工具栏里的 `Search`。
+- 分组名/项目数用 `Window title/subtitle`，显示在原生 toolbar；排序、新增、搜索都进原生 toolbar（`useToolbar`），不再放在中栏里。
 - 没选中时详情区显示 `Empty`：图标 + 标题 + 说明。
 
 ### 1.3 侧栏内容
@@ -56,12 +55,13 @@
 | 窗口 / 帮助 | 系统标准 | 壳 |
 
 - app 菜单的“设置…”只在 manifest 里 `settings: true` 时出现；没有 key 窗口（只有浮窗）时菜单栏是 “Wisp Loom” 的壳菜单。
-- app 命令在 TS 里用 hook 声明：`useCommands([{ id: "new", menu: "file", title: "新建对话", shortcut: "cmd+n", run }])`。命令只是菜单项；同一个函数想放进工具栏，就另外绑一个 `Button`。
+- app 命令在 TS 里用 hook 声明：`useCommands([{ id: "new", menu: "file", title: "新建对话", shortcut: "cmd+n", run }])`。命令只是菜单项；同一个函数想放进原生 toolbar，就在 `useToolbar` 的 handlers 里绑同一个函数。
 - 风险：菜单栏粗体名称系统取进程名，可能始终显示 “Wisp Loom”，M1 实测后决定是否接受。
 
 ## 3. 设置窗口（图 4）
 
-- 壳自己的设置是 `NSTabViewController(tabStyle: .toolbar)`，每个分类里放一个 SwiftUI `Form(.grouped)`（`WindowFactory.makeSettingsWindow(panes:)`）。每个 app 的设置是同一个页面脚本在 `window: "settings"` 下渲染的 `<Settings>`：窗口顶部是 toolbar 风格的分类标签，窗口高度按当前分类内容动画调整。设置窗口不是侧栏材质：页面给 `body` 铺窗口背景（浅色时浅灰、卡片白；深色时深灰、卡片稍亮），分组标题在卡片外。
+- 壳自己的设置是 `NSTabViewController(tabStyle: .toolbar)`，每个分类里放一个 SwiftUI `Form(.grouped)`（`WindowFactory.makeSettingsWindow(panes:)`）。每个 app 的设置是同一个页面脚本在 `window: "settings"` 下渲染的 `<Settings>`：窗口顶部是分类标签，窗口高度按当前分类内容动画调整。设置窗口不是侧栏材质：页面给 `body` 铺窗口背景（浅色时浅灰、卡片白；深色时深灰、卡片稍亮），分组标题在卡片外。
+- Phase 1 的 app 设置窗口仍是原生标题栏 + Web 分类标签；Phase 2 把标签栏改用 `NSToolbar`，复用同一套 toolbar item 工厂（见 06）。
 - 每个分类一个 `Pane`，里面是 `Section` 分组的 `Toggle` / `Picker` / `TextField` / `SecureField`；改动立即写入 app 设置并广播给同 app 的其他窗口。
 - 由 app 菜单的“设置… ⌘,”打开，manifest 里 `settings: true` 才有。
 
@@ -85,10 +85,11 @@ run(<Main />, (
 
 | 组件 | 说明 | 主要 props |
 |---|---|---|
-| `Window` | 整页布局 | `title` `subtitle` `columns`（2/3），子节点 `Sidebar` / `Content` / `Detail` |
-| `Sidebar` `Content` `Detail` | 三种列 | `Content` / `Detail`：`title` `subtitle` `toolbar` |
-| `ToolbarGroup` `Search` | 工具栏胶囊、搜索框 | `Search`：`value` `placeholder` `onInput` |
-| `Button` `Menu` | 按钮、弹出菜单 | `title` `symbol` `role` `prominent` `disabled` `help` `onAction` |
+| `Window` | 整页布局；标题/副标题进原生 toolbar | `title` `subtitle` `columns`（2/3），子节点 `Sidebar` / `Content` / `Detail` |
+| `Sidebar` `Content` `Detail` | 三种内容列，不再有标题/工具栏 | 只有子节点 |
+| `useToolbar` | 原生 toolbar 声明（hook，不是组件） | `spec` `handlers` `onSearch`；见 06 |
+| `Search` | 内容区搜索框（Agent 侧栏用） | `value` `placeholder` `onInput` |
+| `Button` `Menu` | 内容区按钮、弹出菜单（不用于窗口 toolbar） | `title` `symbol` `role` `prominent` `disabled` `help` `onAction` |
 | `List` `Section` `Row` | 列表（上下键选择） | `selection` `onSelect`；`Row`：`value` `title` `subtitle` `symbol` `badge` `selected` |
 | `SidebarTiles` `Tile` | 卡片侧栏 | `title` `symbol` `count` `tint` `selected` `onAction` |
 | `Text` `Stack` `Spacer` `Divider` `Empty` | 内容 | `Text`：`style` `selectable`；`Stack`：`axis` `spacing`（tight/regular/loose） |
@@ -99,7 +100,7 @@ run(<Main />, (
 | `ContextMenu` | 右键菜单，`items` 为 `{title, onAction, destructive}` | `items` |
 | `useCommands` | 菜单栏命令（hook，不是组件） | `{id, menu, title, shortcut, run}` |
 
-新增组件的流程：先在这张表加一行 → `ui/src/components.tsx` 和 `ui/src/style.css` → 示例或测试用到。没有 app 用到的组件不加；不需要改 Swift。`Sheet` `Popover` `ListDetail` 等随后续 Agent 阶段加入。
+新增组件的流程：先在这张表加一行 → `ui/src/components.tsx` 和 `ui/src/style.css` → 示例或测试用到。没有 app 用到的组件不加；内容组件不需要改 Swift，新增原生控件类型才改宿主一次。`Sheet` `Popover` `ListDetail` 等随后续 Agent 阶段加入。
 
 ## 5. 性能要求
 

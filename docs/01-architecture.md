@@ -4,8 +4,8 @@ Wisp Loom 从启动器扩展成“原生 app 平台”：每个 app 是一个插
 
 ## 1. 硬约束
 
-1. 观感是原生的，样式由壳统一决定：插件只描述语义（窗口、分栏、列表、表单、按钮），不能传颜色、字号、边距、尺寸。字体、颜色、深浅色、强调色一律走系统令牌。
-2. 新应用、新布局不改 Swift：界面全部在 TS（页面）里组合，Swift 只管宿主。
+1. 窗口级控件是原生的：标题栏、工具栏、菜单（Phase 1 先做主窗口 toolbar；设置分类标签栏 Phase 2）由宿主用 AppKit 创建；插件只描述 toolbar 语义（按钮/菜单/搜索的 id、SF Symbol、标题），不能传颜色、字号、边距、尺寸。内容区观感也照原生，字体、颜色、深浅色、强调色一律走系统令牌。
+2. 新应用、新布局不改 Swift：内容界面全部在 TS（页面）里组合，窗口 toolbar 通过 `useToolbar` 声明；只有新增原生控件类型或系统能力才改宿主一次，不做 per-app Swift。
 3. 性能好、占用低：后端按需启动、空闲退出，壳空闲时不轮询，窗口关闭即释放页面。
 4. 壳零第三方依赖；TS SDK 只依赖 Preact；插件后端见第 5 节。
 
@@ -22,8 +22,8 @@ Wisp Loom.app（一个 Swift 进程）
 
 | 层 | 职责 | 不负责 |
 |---|---|---|
-| 宿主 `[Swift]` | 窗口、菜单、系统能力、后端进程、Keychain、设置存储 | 任何 app 的界面和业务 |
-| 页面 `[TS]` | 所有界面：布局、列表、表单、交互、设计系统组件 | 网络之外的系统能力（经宿主） |
+| 宿主 `[Swift]` | 窗口、原生 toolbar/菜单/搜索、系统能力、后端进程、Keychain、设置存储 | 任何 app 的业务 |
+| 页面 `[TS]` | 内容界面：布局、列表、表单、交互、设计系统组件；toolbar 只发语义 | 窗口级控件、网络之外的系统能力（经宿主） |
 | 后端 `[Rust]` | 网络、协议、存储、计算 | 界面 |
 | 后端 `[Py]` / `[Go]` | 必须用对应生态的部分 | 常驻、高频的服务 |
 
@@ -46,6 +46,7 @@ Wisp Loom.app（一个 Swift 进程）
    - 系统能力（Keychain、通知、文件选择、窗口、菜单）→ `[Swift]` 宿主，并先在 02 的壳能力表里加一行；
    - 想把某件事放进别的层（例如让页面直接做重计算、让宿主写业务、给后端加 JS 运行时）→ 先在规划里写清理由，得到确认再做。
 4. 将来如果真有 app 必须用 TS 写后端，或要装第三方 JS 扩展，才重新评估 Node。评估时要回答：运行时从哪来（打包 / 自备 / 下载）、多个 app 怎么共用一个进程、权限怎么隔离、常驻内存多少。
+5. **窗口级控件必须原生**（2026-10-31 补充）：标题栏、工具栏、菜单由宿主用 AppKit 实现，页面不再自绘标题条或 toolbar；设置分类标签栏 Phase 2 再迁。内容区仍在 WKWebView 里。完整契约、复用方式和 Phase 1 范围见 `docs/06-native-toolbar.md`。
 
 ### 资源预算（M0 单次粗测，Debug，Apple Silicon，量级参考，不是基准）
 
@@ -84,6 +85,7 @@ ShellUI         ShellPlatform     AppRuntime
 ```
 
 - `AppRuntime` 只 import Foundation、Security，不 import AppKit / SwiftUI / WebKit。它通过 `ShellCore.AppConnection` 协议把一个窗口的消息收发抽象成 JSON 字符串。
+- `ShellUI` 同时负责 WKWebView 承载和原生 `NSToolbar`；`NativeToolbarController` 只认 `ShellCore.ToolbarSpec`，不认识任何 app。
 - 三个中间层互不依赖；只在 `ShellController` 改 `ShellState`，只在 `WindowFactory` 建窗口。
 - 每个 app 的会话（后端、命令、设置）归 `AppRuntime`；页面状态归页面自己。`ShellState` 只记录哪些 app 在运行、开了哪些窗口。
 

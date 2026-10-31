@@ -42,7 +42,8 @@
 | `cancel` | `id` | 取消一个进行中的 `call` |
 | `setting` / `setSetting` | `id` `key` / `key` `value` | 读写 app 设置（UserDefaults，按 app id 隔离）；写入后广播给同 app 的其他窗口 |
 | `commands` | `commands[]` | 注册菜单栏命令 `{id, menu, title, shortcut?, disabled?}` |
-| `title` / `height` / `drag` / `zoom` | | 窗口标题、设置窗口高度、标题栏拖动与双击缩放 |
+| `toolbar` | `spec` | 设置/更新本窗口的原生 toolbar；结构见 `docs/06-native-toolbar.md` |
+| `title` / `height` | | 窗口标题/副标题、设置窗口高度（原生 toolbar 显示标题） |
 | `openSettings` / `log` | | 打开 app 设置窗口、写宿主日志 |
 
 宿主 → 页面：`window.__wisp_recv([...])`，同一轮事件循环里的消息合成一个数组、一次 `evaluateJavaScript`：
@@ -51,6 +52,8 @@
 |---|---|---|
 | `reply` | `id` + `event` / `result` / `error` | `call` 的流式事件和结局；`setting` 的结果 |
 | `command` | `id` | 菜单命令被触发 |
+| `toolbarAction` | `id` | 原生 toolbar 按钮/菜单项被点击 |
+| `toolbarSearch` | `text` | 原生搜索框文本变化 |
 | `settingChanged` | `key` `value` | 其他窗口改了设置 |
 
 启动参数：`window.__wisp_boot = {appID, lang, title, hasBackend, window}`，在任何脚本之前注入。
@@ -60,19 +63,25 @@
 Preact 渲染 DOM，不再有自己的 reconciler 和 patch 协议。SDK 提供：
 
 - 设计系统组件和样式表（见 03）；
-- hooks：Preact 全套，加 `usePersisted`（设置）、`useStream`（流式文本，每帧至多重渲染一次）、`useCommands`（菜单命令）；
-- 桥：`call(method, params, {onEvent})` 返回带 `abort()` 的 Promise，`setting` / `setSetting` / `setSecret` / `deleteSecret`，`registerCommands`；
+- hooks：Preact 全套，加 `usePersisted`（设置）、`useStream`（流式文本，每帧至多重渲染一次）、`useCommands`（菜单命令）、`useToolbar`（原生 toolbar 声明）；
+- 桥：`call(method, params, {onEvent})` 返回带 `abort()` 的 Promise，`setting` / `setSetting` / `setSecret` / `deleteSecret`，`registerCommands`，`registerToolbar`；
 - `run(app, settings?)` 把页面挂到 `document.body`。
 
 页面里可以直接用 `fetch` 等 Web API，但网络与计算密集的工作建议放后端：后端进程可以脱离窗口存活、能被取消、能读 Keychain。
 
 ### 2.4 受控输入
 
-页面就是原生 DOM，文本框输入立即显示，不需要往返宿主，也就没有跨线程回写的问题。
+内容区的页面就是原生 DOM，文本框输入立即显示，不需要往返宿主。窗口 toolbar 的搜索框是原生 `NSSearchField`，文本经 `toolbarSearch` 回传页面；页面不要回写搜索值，避免重建 toolbar。
 
 ### 2.5 组件只讲语义
 
-插件不能传颜色、字体、尺寸、边距：组件不接受 `style` / `class`，只有 `prominent` / `role`、文本 `style`（`title` / `headline` / `body` / `caption` / `secondary`）、SF Symbol 名称、`tint` 枚举。SF Symbol 由宿主渲染成模板图经 `wisp://app/__symbol/<name>.png` 提供，页面用 CSS mask 着色，所以图标跟随文字色、强调色和深浅色。
+插件不能传颜色、字体、尺寸、边距：组件不接受 `style` / `class`，只有 `prominent` / `role`、文本 `style`（`title` / `headline` / `body` / `caption` / `secondary`）、SF Symbol 名称、`tint` 枚举。SF Symbol 由宿主渲染成模板图经 `wisp://app/__symbol/<name>.png` 提供，页面用 CSS mask 着色。
+
+窗口级控件同样只讲语义：toolbar 的 `ToolbarSpec` 只有 id、SF Symbol、标题、菜单项、搜索占位和禁用，宿主决定 `NSToolbarItem` / `NSMenuToolbarItem` / `NSSearchToolbarItem` 的样子。页面不再画标题条/工具栏，也不再发送 `drag` / `zoom`。
+
+## 2.6 原生 toolbar
+
+Phase 1 的完整契约见 `docs/06-native-toolbar.md`：宿主一个通用 `NativeToolbarController`，页面用 `useToolbar(spec, handlers, onSearch?)` 声明；每个 app 只写 item 和 handler，不写 Swift/CSS。设置窗口标签栏、页内 `ContextMenu` 是 Phase 2，仍走 Web。
 
 ## 3. 后端通道 `[Swift]` ↔ `[Rust]` / `[Py]` / `[Go]`
 

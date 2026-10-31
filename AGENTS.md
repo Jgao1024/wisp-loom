@@ -11,6 +11,7 @@ Wisp Loom：macOS 快捷键浮窗启动器（SwiftUI + AppKit），计划开源�
 | `docs/03-native-ui.md` | 两栏/三栏布局、菜单栏、设置窗口、组件清单 |
 | `docs/04-agent-app.md` | Agent 应用的界面、数据、后端协议 |
 | `docs/05-roadmap.md` | 分阶段任务，每项标注语言 |
+| `docs/06-native-toolbar.md` | 原生窗口控件 / toolbar 契约、原生与 Web 分工、Phase 1 范围 |
 
 规划和任务都要写明各部分用什么语言：`[Swift]` `[TS]` `[Rust]` `[Py]` `[Go]`。
 
@@ -20,9 +21,9 @@ Wisp Loom：macOS 快捷键浮窗启动器（SwiftUI + AppKit），计划开源�
 - 注释非必要不写，只标关键点。
 - 壳不加第三方依赖；插件后端只用 `docs/01-architecture.md` 第 5 节的白名单，版本锁死。
 - 只在 `ShellController` 里改 `ShellState`；只在 `WindowFactory` 里创建 `NSWindow` / `NSPanel`。
-- 玻璃效果只走 `GlassStyles`，宿主的尺寸、间距、圆角只走设计令牌。应用界面在 WKWebView 里用 TS 写，只能用 `ui/` 的设计系统组件，不传样式，观感照 macOS 原生应用。
-- 新应用、新布局不改 Swift：界面都在 TS 里组合；只有新增系统能力（Keychain、通知等）才改宿主。
-- 做新功能前先评估它属于哪一层，边界决定见 `docs/01-architecture.md` 第 2 节：TS 只在页面里，后端默认 Rust，不引入 Node 后端；要跨层先写清理由并确认。
+- 玻璃效果只走 `GlassStyles`，宿主的尺寸、间距、圆角只走设计令牌。窗口级控件（标题栏、工具栏、菜单；Phase 1 先做主窗口 toolbar，设置标签栏 Phase 2）由宿主用 AppKit 原生实现；内容区在 WKWebView 里用 TS 写，只能用 `ui/` 的设计系统组件，不传样式。原生/Web 边界见 `docs/06-native-toolbar.md`。
+- 新应用、新布局不改 Swift：内容界面在 TS 里组合，窗口 toolbar 用 `useToolbar` 声明；只有新增系统控件类型或系统能力才改宿主一次，不做 per-app Swift。
+- 做新功能前先评估它属于哪一层，边界决定见 `docs/01-architecture.md` 第 2 节：TS 只在页面里，后端默认 Rust，不引入 Node 后端；窗口级控件必须走宿主原生，页面不能自绘标题栏/工具栏；要跨层先写清理由并确认。
 - 顶层目录就是四层：`host/`（Swift）、`ui/`（TS SDK）、`backend/`（后端 SDK）、`apps/`（应用）。应用只依赖 `ui/` 和 `backend/`，`host/` 不依赖任何应用；详见 `docs/01-architecture.md` 第 6 节。
 - 依赖只能向下：`ShellCore`（纯逻辑，不 import AppKit/SwiftUI）← `ShellUI` / `ShellPlatform` / `AppRuntime`（互不依赖，`AppRuntime` 只 import Foundation 和 Security）← `host/App`（唯一装配点）。
 
