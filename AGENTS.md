@@ -13,7 +13,6 @@ Wisp Loom：macOS 快捷键浮窗启动器（SwiftUI + AppKit），计划开源�
 | `docs/05-roadmap.md` | 分阶段任务，每项标注语言 |
 | `docs/06-native-toolbar.md` | 原生窗口控件 / toolbar 契约、原生与 Web 分工、Phase 1 范围 |
 | `docs/07-native-components.md` | 原生组件登记表、复用方式、原生/Web 边界、NSSplitView 取舍、后续 Web 清单 |
-| `docs/08-native-migration-prompts.md` | 后续迁移到原生的新会话提示词（设置标签、原生菜单、原生侧栏、内容控件） |
 
 规划和任务都要写明各部分用什么语言：`[Swift]` `[TS]` `[Rust]` `[Py]` `[Go]`。
 

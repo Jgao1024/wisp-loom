@@ -79,7 +79,7 @@ M0 的第一版是“JSContext + patch 协议 + SwiftUI 节点渲染器”（对
 | 1.13 | 深浅色截图、桥/模型测试、lint/test/build/release | `[Swift]` + `[TS]` |
 | 1.14 | 侧栏折叠：`sidebar` toolbar item、`useSidebar`、`Window sidebar` | `[Swift]` + `[TS]` |
 
-Phase 2（不在 1.9–1.14）：设置窗口分类标签栏改原生、页内 `ContextMenu` 改原生 `NSMenu`。Composer、列表、Markdown 等内容的原生控件不在 B 范围；组件登记与后续迁移提示词见 `docs/07-native-components.md`、`docs/08-native-migration-prompts.md`。
+Phase 2（不在 1.9–1.14）：设置窗口分类标签栏改原生、页内 `ContextMenu` 改原生 `NSMenu`。Composer、列表、Markdown 等内容的原生控件不在 B 范围；组件登记与后续迁移清单见 `docs/07-native-components.md`。
 
 ## M2 · 协议补齐与 Agent 配置
 
