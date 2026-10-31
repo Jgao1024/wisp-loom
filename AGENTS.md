@@ -20,9 +20,10 @@ Wisp Loom：macOS 快捷键浮窗启动器（SwiftUI + AppKit），计划开源�
 - 注释非必要不写，只标关键点。
 - 壳不加第三方依赖；插件后端只用 `docs/01-architecture.md` 第 5 节的白名单，版本锁死。
 - 只在 `ShellController` 里改 `ShellState`；只在 `WindowFactory` 里创建 `NSWindow` / `NSPanel`。
-- 玻璃效果只走 `GlassStyles`，宿主的尺寸、间距、圆角只走设计令牌。应用界面在 WKWebView 里用 TS 写，只能用 `sdk/ts` 的设计系统组件，不传样式，观感照 macOS 原生应用。
+- 玻璃效果只走 `GlassStyles`，宿主的尺寸、间距、圆角只走设计令牌。应用界面在 WKWebView 里用 TS 写，只能用 `ui/` 的设计系统组件，不传样式，观感照 macOS 原生应用。
 - 新应用、新布局不改 Swift：界面都在 TS 里组合；只有新增系统能力（Keychain、通知等）才改宿主。
-- 依赖只能向下：`ShellCore`（纯逻辑，不 import AppKit/SwiftUI）← `ShellUI` / `ShellPlatform` / `AppRuntime`（互不依赖，`AppRuntime` 只 import Foundation 和 Security）← `App`（唯一装配点）。
+- 顶层目录就是四层：`host/`（Swift）、`ui/`（TS SDK）、`backend/`（后端 SDK）、`apps/`（应用）。应用只依赖 `ui/` 和 `backend/`，`host/` 不依赖任何应用；详见 `docs/01-architecture.md` 第 6 节。
+- 依赖只能向下：`ShellCore`（纯逻辑，不 import AppKit/SwiftUI）← `ShellUI` / `ShellPlatform` / `AppRuntime`（互不依赖，`AppRuntime` 只 import Foundation 和 Security）← `host/App`（唯一装配点）。
 
 ## 提交前
 

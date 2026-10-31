@@ -50,7 +50,7 @@ Wisp Loom.app（一个 Swift 进程）
 
 ## 4. 模块分层
 
-Swift 包 `Packages/WispLoomKit`：
+宿主的 Swift 包 `host/WispLoomKit`：
 
 ```text
 ShellCore（纯逻辑：状态、manifest、连接协议 AppConnection）
@@ -78,15 +78,25 @@ ShellUI         ShellPlatform     AppRuntime
 
 ## 6. 目录
 
+顶层目录一一对应第 2 节的四层，依赖只能向下：`apps` 依赖 `ui` 和 `backend`，`host` 谁都不依赖，不 import 任何 app。
+
 ```text
-apps/<name>/              一个 app 一个目录，壳只认这一层
+host/                     [Swift] 宿主
+  App/                      唯一装配点（入口、CompositionRoot、AppRegistry、菜单协调、热重载）
+  WispLoomKit/              Swift 包：ShellCore / ShellUI / ShellPlatform / AppRuntime
+  project.yml               XcodeGen 配置
+ui/                       [TS] @wisp/ui：设计系统组件、style.css、hooks、与宿主的桥、node 测试
+backend/                  后端 SDK
+  rust/                     [Rust] wisp-backend crate：stdio JSON Lines 循环、请求分发、取消、合并
+  py/                       [Py] 单文件 wisp_backend.py
+apps/<name>/              应用，壳只认这一层
   manifest.json
-  ui/                     [TS] 入口 ui/main.tsx
-  backend/                [Rust] / [Py] / [Go]，可选
-sdk/ts/                   [TS] @wisp/ui：设计系统组件、样式表、hooks、与宿主的桥
-sdk/rust/                 [Rust] wisp-backend：stdio JSON Lines 循环、请求分发、通知
-Packages/WispLoomKit/     [Swift] 壳
+  ui/                       [TS] 入口 ui/main.tsx，只 import @wisp/ui
+  backend/                  [Rust] / [Py] / [Go]，可选，只用 backend/ 下的 SDK
+docs/  scripts/           文档、构建脚本
 ```
+
+根目录只放跨层的工程文件：`Makefile`、`package.json`（npm workspace）、`tsconfig.json`、`Cargo.toml`（cargo workspace）。
 
 构建：`make apps` 把每个 app 编成 `build/apps/<name>/`（`manifest.json`、`ui.js`、`ui.css`、`backend/<可执行文件>`），`make build` 再把它同步进 app bundle 的 `Resources/Apps`。Rust 后端的 cargo workspace 在仓库根，产物统一在 `build/cargo`。
 

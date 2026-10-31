@@ -6,7 +6,7 @@
 
 ## 1. 窗口布局
 
-窗口统一 `.titled + .fullSizeContentView`、unified 工具栏，红绿灯在左上，工具栏按钮是系统的玻璃胶囊（macOS 26+ 自动）。
+窗口统一 `.titled + .fullSizeContentView`，标题栏透明，红绿灯在左上。标题条和工具栏由页面（设计系统）绘制，按钮是设计系统的胶囊；窗口、菜单栏、设置窗口由宿主用 AppKit 创建。
 
 ### 1.1 两栏（参考手记，图 1）
 
@@ -55,13 +55,13 @@
 | 显示 | 显示/隐藏侧栏 ⌃⌘S、进入全屏 + app 命令 | 壳 + app |
 | 窗口 / 帮助 | 系统标准 | 壳 |
 
-- app 菜单的“设置…”只在 app 声明了 `<Settings>` 时出现；没有 key 窗口（只有浮窗）时菜单栏是 “Wisp Loom” 的壳菜单。
-- app 命令在 TS 里用 `<Command menu="file" title="新建对话" shortcut="cmd+n" onAction={…}/>` 声明，同一个命令也可以放进工具栏。
+- app 菜单的“设置…”只在 manifest 里 `settings: true` 时出现；没有 key 窗口（只有浮窗）时菜单栏是 “Wisp Loom” 的壳菜单。
+- app 命令在 TS 里用 hook 声明：`useCommands([{ id: "new", menu: "file", title: "新建对话", shortcut: "cmd+n", run }])`。命令只是菜单项；同一个函数想放进工具栏，就另外绑一个 `Button`。
 - 风险：菜单栏粗体名称系统取进程名，可能始终显示 “Wisp Loom”，M1 实测后决定是否接受。
 
 ## 3. 设置窗口（图 4）
 
-- 壳自己的设置用 `NSTabViewController(tabStyle: .toolbar)`（SwiftUI `Form`）；每个 app 的设置是同一个页面脚本在 `window: "settings"` 下渲染的 `<Settings>`：窗口顶部是 toolbar 风格的分类标签，窗口高度按当前分类内容动画调整。
+- 壳自己的设置是 `NSTabViewController(tabStyle: .toolbar)`，每个分类里放一个 SwiftUI `Form(.grouped)`（`WindowFactory.makeSettingsWindow(panes:)`）。每个 app 的设置是同一个页面脚本在 `window: "settings"` 下渲染的 `<Settings>`：窗口顶部是 toolbar 风格的分类标签，窗口高度按当前分类内容动画调整。
 - 每个分类一个 `Pane`，里面是 `Section` 分组的 `Toggle` / `Picker` / `TextField` / `SecureField`；改动立即写入 app 设置并广播给同 app 的其他窗口。
 - 由 app 菜单的“设置… ⌘,”打开，manifest 里 `settings: true` 才有。
 
@@ -81,7 +81,7 @@ run(<Main />, (
 
 ## 4. 组件清单
 
-页面组件都在 `sdk/ts/src/components.tsx`，样式只在 `style.css`。
+页面组件都在 `ui/src/components.tsx`，样式只在 `style.css`。
 
 | 组件 | 说明 | 主要 props |
 |---|---|---|
@@ -95,7 +95,7 @@ run(<Main />, (
 | `Settings` `Pane` `Toggle` `Picker` `TextField` `SecureField` | 设置窗口 | `value` `onChange` |
 | `useCommands` | 菜单栏命令（hook，不是组件） | `{id, menu, title, shortcut, run}` |
 
-新增组件的流程：先在这张表加一行 → `sdk/ts/src/components.tsx` 和 `style.css` → 示例或测试用到。没有 app 用到的组件不加；不需要改 Swift。`Markdown` `Scroll` `Composer` `Sheet` `Popover` `ListDetail` 等 M1 起随 Agent 加入。
+新增组件的流程：先在这张表加一行 → `ui/src/components.tsx` 和 `ui/src/style.css` → 示例或测试用到。没有 app 用到的组件不加；不需要改 Swift。`Markdown` `Scroll` `Composer` `Sheet` `Popover` `ListDetail` 等 M1 起随 Agent 加入。
 
 ## 5. 性能要求
 

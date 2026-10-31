@@ -20,7 +20,7 @@
     ]
   },
   "include": [
-    "sdk/ts",
+    "ui",
     "apps/*/ui"
   ]
 }

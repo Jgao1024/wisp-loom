@@ -1,8 +1,8 @@
-PACKAGE := Packages/WispLoomKit
+PACKAGE := host/WispLoomKit
 DERIVED := build/DerivedData
 APP := $(DERIVED)/Build/Products/Debug/WispLoom.app
-SOURCES := App $(PACKAGE)
-XCODEBUILD := xcodebuild -project WispLoom.xcodeproj -scheme WispLoom -destination 'platform=macOS,arch=arm64' -derivedDataPath $(DERIVED) -quiet
+SOURCES := host/App $(PACKAGE)
+XCODEBUILD := xcodebuild -project host/WispLoom.xcodeproj -scheme WispLoom -destination 'platform=macOS,arch=arm64' -derivedDataPath $(DERIVED) -quiet
 
 .PHONY: bootstrap project apps build release run dev test lint format clean
 
@@ -13,7 +13,7 @@ bootstrap:
 	@$(MAKE) project
 
 project:
-	xcodegen generate
+	xcodegen generate --spec host/project.yml
 
 # Each app becomes build/apps/<name>/ (manifest.json, ui.js, backend/).
 apps:
@@ -37,7 +37,7 @@ test:
 	swift test --package-path $(PACKAGE) --scratch-path build/WispLoomKit
 	npm test --silent
 	cargo test --all
-	cd sdk/py && python3 -m unittest
+	cd backend/py && python3 -m unittest
 
 lint:
 	swift format lint --strict --recursive $(SOURCES)

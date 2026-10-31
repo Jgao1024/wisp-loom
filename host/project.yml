@@ -15,7 +15,7 @@ settings:
       SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
 packages:
   WispLoomKit:
-    path: Packages/WispLoomKit
+    path: WispLoomKit
 targets:
   WispLoom:
     type: application
@@ -37,8 +37,8 @@ targets:
         script: |
           # Built-in apps come from `make apps`; the bundle gets whatever build/apps holds.
           mkdir -p "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Apps"
-          if [ -d "$SRCROOT/build/apps" ]; then
-            rsync -a --delete "$SRCROOT/build/apps/" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Apps/"
+          if [ -d "$SRCROOT/../build/apps" ]; then
+            rsync -a --delete "$SRCROOT/../build/apps/" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Apps/"
           fi
         basedOnDependencyAnalysis: false
     settings:

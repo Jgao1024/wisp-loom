@@ -55,7 +55,7 @@
 
 启动参数：`window.__wisp_boot = {appID, lang, title, hasBackend, window}`，在任何脚本之前注入。
 
-### 2.3 TS SDK `sdk/ts`
+### 2.3 TS SDK `ui/`
 
 Preact 渲染 DOM，不再有自己的 reconciler 和 patch 协议。SDK 提供：
 
@@ -117,8 +117,8 @@ Preact 渲染 DOM，不再有自己的 reconciler 和 patch 协议。SDK 提供�
 
 ### 3.4 SDK
 
-- `sdk/rust`（crate `wisp-backend`）：读行、分发到 `fn(params, ctx) -> Result<Value>`，`ctx.emit(event)`、`ctx.cancelled()`、`ctx.shell(method, params)`。依赖只有 `serde` / `serde_json`。
-- `sdk/py`：单文件，同样的接口，只用标准库。
+- `backend/rust`（crate `wisp-backend`）：读行、分发到 `fn(params, ctx) -> Result<Value>`，`ctx.emit(event)`、`ctx.cancelled()`、`ctx.shell(method, params)`。依赖只有 `serde` / `serde_json`。
+- `backend/py`：单文件，同样的接口，只用标准库。
 - Go 等到第一个确实需要的 app 再写。
 
 ## 4. 热重载（仅开发期）
