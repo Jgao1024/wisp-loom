@@ -66,8 +66,25 @@ final class CompositionRoot {
                     .init(controller.state.language.string("Quit")) { controller.dispatch(.quit) },
                 ]
             })
+        #if DEBUG
+            if let appID = Self.developmentAppToOpen {
+                controller.dispatch(
+                    ProcessInfo.processInfo.environment["WISP_OPEN_SETTINGS"] == "1"
+                        ? .openAppSettings(appID) : .openApp(appID))
+                return
+            }
+        #endif
         controller.dispatch(.showLauncher)
     }
+
+    #if DEBUG
+        /// Development only: `WISP_OPEN=<appID>` opens that app's window instead of the launcher, so a
+        /// script can screenshot it; `WISP_OPEN_SETTINGS=1` opens the settings window instead.
+        private static var developmentAppToOpen: AppID? {
+            guard let raw = ProcessInfo.processInfo.environment["WISP_OPEN"], !raw.isEmpty else { return nil }
+            return AppID(rawValue: raw)
+        }
+    #endif
 
     func stop() { controller.stop() }
 

@@ -127,3 +127,4 @@ Preact 渲染 DOM，不再有自己的 reconciler 和 patch 协议。SDK 提供�
 - `ui.js` / `ui.css` 变了：该 app 所有窗口的 WebView `reload()`，窗口不关，界面状态清零。
 - 后端可执行文件变了：等进行中的请求结束后重启后端。
 - `manifest.json` 变了：重新扫描目录并刷新启动器（新增、删除、改名都生效），已开窗口不动。
+- 截图：`WISP_OPEN=<appID>` 启动后直接打开该 app 的主窗口（加 `WISP_OPEN_SETTINGS=1` 则打开设置窗口），不经过浮窗；只在 Debug 构建里读，发布版没有这段代码。`scripts/shot.sh` 用它在一条命令里完成“启动 → 按 owner 找窗口 → `screencapture -l` → 退出”，图存到 `build/shots/`。
