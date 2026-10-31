@@ -1,7 +1,17 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { answer, posted, take } from "./setup.ts";
-import { call, CallError, deleteSecret, registerCommands, setSecret, setSetting, setting } from "../src/bridge.ts";
+import {
+  call,
+  CallError,
+  deleteSecret,
+  registerCommands,
+  registerToolbar,
+  setSecret,
+  setSetting,
+  setToolbarHandlers,
+  setting,
+} from "../src/bridge.ts";
 
 test("call posts a request and resolves with the result", async () => {
   take();
@@ -85,4 +95,20 @@ test("registered commands post their spec and run on a command message", () => {
   answer({ type: "command", id: "unknown" });
   assert.equal(ran, 1);
   assert.ok(posted.length === 0);
+});
+
+test("toolbar specs are posted and native actions/search reach the latest handlers", () => {
+  take();
+  const spec = {
+    leading: [{ id: "new", symbol: "square.and.pencil", help: "New" }],
+    trailing: [{ id: "search", search: true, placeholder: "Search" }],
+  };
+  registerToolbar(spec);
+  assert.deepEqual(take(), [{ type: "toolbar", spec }]);
+
+  const calls: string[] = [];
+  setToolbarHandlers(() => calls.push("stale"), () => calls.push("stale search"));
+  setToolbarHandlers((id) => calls.push(`action:${id}`), (text) => calls.push(`search:${text}`));
+  answer({ type: "toolbarAction", id: "new" }, { type: "toolbarSearch", text: "abc" });
+  assert.deepEqual(calls, ["action:new", "search:abc"]);
 });

@@ -63,9 +63,10 @@
 Preact 渲染 DOM，不再有自己的 reconciler 和 patch 协议。SDK 提供：
 
 - 设计系统组件和样式表（见 03）；
-- hooks：Preact 全套，加 `usePersisted`（设置）、`useStream`（流式文本，每帧至多重渲染一次）、`useCommands`（菜单命令）、`useToolbar`（原生 toolbar 声明）；
+- hooks：Preact 全套，加 `usePersisted`（设置）、`useStream`（流式文本，每帧至多重渲染一次）、`useCommands`（菜单命令）、`useToolbar`（原生 toolbar 声明）、`useSidebar`（侧栏显示状态）；
 - 桥：`call(method, params, {onEvent})` 返回带 `abort()` 的 Promise，`setting` / `setSetting` / `setSecret` / `deleteSecret`，`registerCommands`，`registerToolbar`；
 - `run(app, settings?)` 把页面挂到 `document.body`。
+- 窗口 toolbar 的侧栏折叠 item 带 `sidebar: true`，点击仍回传 `{type:"toolbarAction", id}`；页面把 `useSidebar` 的 toggle 绑到该 id，并用 `Window sidebar` 切列。
 
 页面里可以直接用 `fetch` 等 Web API，但网络与计算密集的工作建议放后端：后端进程可以脱离窗口存活、能被取消、能读 Keychain。
 
@@ -77,7 +78,7 @@ Preact 渲染 DOM，不再有自己的 reconciler 和 patch 协议。SDK 提供�
 
 插件不能传颜色、字体、尺寸、边距：组件不接受 `style` / `class`，只有 `prominent` / `role`、文本 `style`（`title` / `headline` / `body` / `caption` / `secondary`）、SF Symbol 名称、`tint` 枚举。SF Symbol 由宿主渲染成模板图经 `wisp://app/__symbol/<name>.png` 提供，页面用 CSS mask 着色。
 
-窗口级控件同样只讲语义：toolbar 的 `ToolbarSpec` 只有 id、SF Symbol、标题、菜单项、搜索占位和禁用，宿主决定 `NSToolbarItem` / `NSMenuToolbarItem` / `NSSearchToolbarItem` 的样子。页面不再画标题条/工具栏，也不再发送 `drag` / `zoom`。
+窗口级控件同样只讲语义：toolbar 的 `ToolbarSpec` 只有 id、SF Symbol、标题、菜单项、搜索占位、侧栏折叠和禁用，宿主决定 `NSToolbarItem` / `NSMenuToolbarItem` / `NSSearchToolbarItem` 的样子。页面不再画标题条/工具栏，也不再发送 `drag` / `zoom`。
 
 ## 2.6 原生 toolbar
 

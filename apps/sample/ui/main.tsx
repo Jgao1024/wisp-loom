@@ -1,8 +1,8 @@
 import "@wisp/ui/style.css";
 import {
-  Button, Content, Detail, Divider, Empty, List, Menu, Pane, Picker, Row, SecureField, Section, Settings, Sidebar,
-  SidebarTiles, Stack, Text, TextField, Tile, Toggle, ToolbarGroup, Window, Search, call, run, setSecret, usePersisted,
-  useCommands, useMemo, useState, useStream,
+  Button, Content, Detail, Divider, Empty, List, Pane, Picker, Row, SecureField, Section, Settings, Sidebar,
+  SidebarTiles, Stack, Text, TextField, Tile, Toggle, Window, call, run, setSecret, useCommands, useMemo, usePersisted,
+  useSidebar, useState, useStream, useToolbar,
 } from "@wisp/ui";
 
 interface Item {
@@ -19,12 +19,12 @@ const initial: Item[] = [
 
 function Sample() {
   const [showGroups] = usePersisted("showGroups", true);
-  const [name] = usePersisted("name", "Sample");
   const [items, setItems] = useState(initial);
   const [group, setGroup] = useState<Item["group"] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [ascending, setAscending] = useState(true);
   const [query, setQuery] = useState("");
+  const [sidebar, toggleSidebar] = useSidebar();
   const reply = useStream();
   const [running, setRunning] = useState<{ abort(): void } | null>(null);
 
@@ -56,9 +56,28 @@ function Sample() {
   };
 
   useCommands([{ id: "new", menu: "file", title: "New Item", shortcut: "cmd+n", run: add }]);
+  useToolbar(
+    {
+      leading: [{ id: "sidebar", sidebar: true, help: "Toggle Sidebar" }],
+      trailing: [
+        {
+          id: "sort",
+          symbol: "arrow.up.arrow.down",
+          menu: [
+            { id: "sort-az", title: "Title A–Z" },
+            { id: "sort-za", title: "Title Z–A" },
+          ],
+        },
+        { id: "add", symbol: "plus", help: "New item" },
+        { id: "search", search: true, placeholder: "Search" },
+      ],
+    },
+    { sidebar: toggleSidebar, "sort-az": () => setAscending(true), "sort-za": () => setAscending(false), add },
+    setQuery,
+  );
 
   return (
-    <Window title={name || "Sample"} columns={3}>
+    <Window title={group ?? "All"} subtitle={`${shown.length} items`} columns={3} sidebar={sidebar}>
       <Sidebar>
         <SidebarTiles>
           <Tile title="All" symbol="tray.full" tint="blue" count={items.length} selected={group === null} onAction={() => setGroup(null)} />
@@ -71,26 +90,14 @@ function Sample() {
           </Section>
         </List>
       </Sidebar>
-      <Content
-        title={group ?? "All"}
-        subtitle={`${shown.length} items`}
-        toolbar={
-          <ToolbarGroup>
-            <Menu symbol="arrow.up.arrow.down">
-              <Button title="Title A–Z" onAction={() => setAscending(true)} />
-              <Button title="Title Z–A" onAction={() => setAscending(false)} />
-            </Menu>
-            <Button symbol="plus" help="New item" onAction={add} />
-          </ToolbarGroup>
-        }
-      >
+      <Content>
         <List selection={selected} onSelect={setSelected}>
           {shown.map((item) => (
             <Row key={item.id} value={item.id} title={item.title} subtitle={showGroups ? item.group : undefined} selected={item.id === selected} />
           ))}
         </List>
       </Content>
-      <Detail toolbar={<Search value={query} placeholder="Search" onInput={setQuery} />}>
+      <Detail>
         {current ? (
           <div class="pad">
             <Stack>

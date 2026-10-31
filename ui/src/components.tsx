@@ -1,6 +1,6 @@
 import { render as mount, type ComponentChildren, type VNode } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
-import { boot, openSettings, post, setContentHeight, setWindowTitle } from "./bridge.ts";
+import { boot, openSettings, setContentHeight, setWindowTitle } from "./bridge.ts";
 
 /** Components take semantics only: no colours, fonts, sizes or margins can be passed. */
 type Kids = { children?: ComponentChildren };
@@ -17,45 +17,23 @@ export function Icon({ symbol }: { symbol: string }) {
 
 // ---- Window and layout --------------------------------------------------------------------
 
-/** The window and its layout: the first child is the sidebar, the last the detail, a third in between is the content list. */
-export function Window({ title, subtitle, columns, children }: { title: string; subtitle?: string; columns: 2 | 3 } & Kids) {
+/** The window and its layout: the first child is the sidebar, the last the detail, a third in between is the content list.
+ *  `sidebar` is declared by the page; the native toolbar's sidebar item toggles it. */
+export function Window({ title, subtitle, columns, sidebar = true, children }: {
+  title: string; subtitle?: string; columns: 2 | 3; sidebar?: boolean;
+} & Kids) {
   useEffect(() => setWindowTitle(title, subtitle), [title, subtitle]);
-  return <div class={cx("window", columns === 2 && "two")}>{children}</div>;
+  return <div class={cx("window", "native", columns === 2 && "two", !sidebar && "sidebar-hidden")}>{children}</div>;
 }
 
-type ColumnProps = { title?: string; subtitle?: string; toolbar?: ComponentChildren } & Kids;
-
-/** The empty parts of a titlebar drag the window; buttons and fields keep their own clicks. Every column has
- *  one, including the sidebar, so the whole top strip (where the traffic lights sit) behaves like a titlebar. */
-function Column({ kind, title, subtitle, toolbar, children }: { kind: string } & ColumnProps) {
-  const interactive = (target: EventTarget | null) =>
-    target instanceof Element && !!target.closest("button, input, select, textarea, .menu");
-  return (
-    <section class={cx("column", kind)}>
-      <header
-        class="titlebar"
-        onMouseDown={(e) => !interactive(e.target) && e.detail < 2 && post({ type: "drag" })}
-        onDblClick={(e) => !interactive(e.target) && post({ type: "zoom" })}
-      >
-        {title !== undefined && (
-          <div class="heading">
-            <h1 class="text headline">{title}</h1>
-            {subtitle && <span class="subtitle">{subtitle}</span>}
-          </div>
-        )}
-        {toolbar}
-      </header>
-      {children}
-    </section>
-  );
-}
+/** A content column. The native toolbar owns the titlebar, so columns are only content containers. */
+const Column = ({ kind, children }: { kind: string } & Kids) => (
+  <section class={cx("column", kind)}>{children}</section>
+);
 
 export const Sidebar = (p: Kids) => <Column kind="sidebar" {...p} />;
-export const Content = (p: ColumnProps) => <Column kind="content" {...p} />;
-export const Detail = (p: ColumnProps) => <Column kind="detail" {...p} />;
-
-/** Adjacent toolbar buttons share one capsule. */
-export const ToolbarGroup = ({ children }: Kids) => <div class="group">{children}</div>;
+export const Content = (p: Kids) => <Column kind="content" {...p} />;
+export const Detail = (p: Kids) => <Column kind="detail" {...p} />;
 
 export function Search({ value, placeholder, onInput }: { value: string; placeholder?: string; onInput: (text: string) => void }) {
   return (

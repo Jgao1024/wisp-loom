@@ -14,6 +14,7 @@
 | toolbar 按钮 | `NSToolbarItem(isBordered: true)` + SF Symbol | 是 |
 | toolbar 菜单 | `NSMenuToolbarItem` + `NSMenu` | 是 |
 | toolbar 搜索 | `NSSearchToolbarItem` + `NSSearchField` | 是 |
+| 侧栏折叠按钮 | `NSToolbarItem(isBordered:)` + SF Symbol，回传 id | 是 |
 | 菜单栏、状态栏图标 | AppKit | 是 |
 | 壳设置窗口、浮窗启动器 | SwiftUI | 是 |
 | 侧栏行、内容列表、详情 | WKWebView + 设计系统 | 否 |
@@ -26,7 +27,7 @@
 
 1. **页面不再画标题条/工具栏**，也不再有拖动、双击缩放的页面逻辑；这些由 `NSToolbar` 和 `NSWindow` 负责。
 2. 页面只声明 toolbar 的语义（id、SF Symbol、标题、菜单项、搜索占位、禁用），由宿主决定控件和样式。app 不能传颜色、字号、边距。
-3. `Content` / `Detail` / `Sidebar` 只是内容列；不再有 `title`、`subtitle`、`toolbar` 属性。窗口标题统一走 `Window title/subtitle`。
+3. `Content` / `Detail` / `Sidebar` 只是内容列；不再有 `title`、`subtitle`、`toolbar` 属性。窗口标题统一走 `Window title/subtitle`；侧栏是否显示走 `Window sidebar`，由页面状态决定。
 4. 内容区控件（Composer 的发送/加号/模型菜单、侧栏搜索、页内菜单）仍是 Web，不属于 Phase 1。要做原生内容控件是更大的 C 方向，另议。
 
 ## 2. 复用架构
@@ -49,12 +50,13 @@ app TS
 | 图标按钮、悬停/按下/焦点/tooltip | `NSToolbarItem(isBordered:)` | `id` `symbol` `help` |
 | 菜单按钮、菜单项、禁用 | `NSMenuToolbarItem` / `NSMenu` | menu 项 + id |
 | 搜索框 | `NSSearchToolbarItem` | `placeholder` + `onSearch` |
+| 侧栏折叠按钮 | `NSToolbarItem(isBordered:)` | `{id, sidebar: true}` + `useSidebar` |
 | 标题/副标题 | `window.title/subtitle` | `title` `subtitle` |
 | 动作回传、handler 注册 | 桥 + `useToolbar` | `id → function` |
 | 设置标签栏（Phase 2） | 复用同一 item 工厂加 `tabs` | pane 列表 |
 | 原生右键菜单（Phase 2） | 复用同一 menu 模型 | items |
 
-新增一种原生控件（例如 segmented group、toggle）时：**在宿主和 SDK 各加一次**，所有 app 立刻可用；app 不能自己发明原生控件。Phase 1 只做 button / menu / search 三种，等真实 app 用到再加 group、toggle，避免过度设计。
+新增一种原生控件（例如 segmented group、toggle）时：**在宿主和 SDK 各加一次**，所有 app 立刻可用；app 不能自己发明原生控件。Phase 1 做 button / menu / search / 侧栏折叠四种，group、toggle 等真实 app 用到再加，避免过度设计。
 
 ## 3. `ToolbarSpec`
 
@@ -76,6 +78,7 @@ export interface ToolbarItem {
   disabled?: boolean;
   menu?: ToolbarMenuItem[];// 有 menu 时是菜单按钮
   search?: boolean;        // true 时是搜索框
+  sidebar?: boolean;       // true 时是侧栏折叠按钮
   placeholder?: string;
 }
 
@@ -92,13 +95,17 @@ export interface ToolbarSpec {
 - spec 只在结构变化时重建 toolbar；搜索输入不重建。
 - 一个窗口只有一个 toolbar。`leading` 和 `trailing` 之间由宿主插入 flexible space，trailing 靠右。
 - 不需要 toolbar 的页面也要调用 `useToolbar({})`，保证窗口有统一的原生标题栏高度。
+- 侧栏折叠按钮也走 `toolbarAction`：item 带 `sidebar: true`，页面收到 id 后调 `useSidebar` 的 toggle；宿主不隐藏、不移动 Web 内容。
 
 页面写法：
 
 ```tsx
 useToolbar(
   {
-    leading: [{ id: "new", symbol: "square.and.pencil", help: "新建对话" }],
+    leading: [
+      { id: "sidebar", sidebar: true, help: "显示/隐藏侧栏" },
+      { id: "new", symbol: "square.and.pencil", help: "新建对话" },
+    ],
     trailing: [
       { id: "more", symbol: "ellipsis", menu: [
         { id: "rename", title: "重命名" },
@@ -110,7 +117,10 @@ useToolbar(
       { id: "search", search: true, placeholder: "搜索对话" },
     ],
   },
-  { new: newConversation, rename: startRename, copy: copyMarkdown, delete: removeActive, share: copyMarkdown },
+  {
+    sidebar: toggleSidebar, new: newConversation, rename: startRename, copy: copyMarkdown,
+    delete: removeActive, share: copyMarkdown,
+  },
   setQuery,
 );
 ```
@@ -138,10 +148,11 @@ useToolbar(
 ## 5. 布局与外观
 
 - 窗口仍是 `.titled + .fullSizeContentView`，WebView 铺满；`NSToolbar` 透明地盖在顶部。
-- 页面根节点去掉标题条；每列加顶部 inset（`--titlebar`，Phase 1 取 52pt，截图核对原生 toolbar 实际高度后校准）。
+- 页面根节点去掉标题条；每列加顶部 inset（`--titlebar` = 52pt，已按原生 toolbar 实际高度截图核对）。
 - 列的背景仍然铺到顶部：侧栏透明，露出 `NSVisualEffectView(.sidebar)`；内容/详情 `Canvas` 一直画到窗口顶，所以 toolbar 后面的左右底色和系统 app 一致。
 - 原生 toolbar 负责拖动、双击缩放、标题/副标题、按钮 hover/按下/焦点、菜单跟踪、搜索框焦点。
 - 页面里不要再放任何“标题条/工具栏”组件或拖拽逻辑。`ToolbarGroup` 删除；`Search` 只用于内容区（例如 Agent 侧栏搜索）。
+- 侧栏折叠只切 `Window sidebar` 的 class：`display:none` 移出侧栏列，内容/详情自动重排；Phase 1 不做宽度动画。
 - 内容列不再有 `title/subtitle/toolbar`。窗口级标题统一用：
 
 ```tsx
@@ -159,12 +170,12 @@ useToolbar(
 
 不写 Swift、不写 toolbar CSS。示例与 Agent 的迁移：
 
-- 示例：title = 当前分组，subtitle = 数量；toolbar = 搜索（trailing）、排序菜单、新增按钮（leading 或 trailing）；原来的页内搜索/排序/加号删除。
-- Agent：title = 当前对话，subtitle = `Agent · Model`；toolbar leading = 新建对话，trailing = ⋯ 菜单（重命名/复制/删除）、Agent 菜单、分享；侧栏的“新建对话”行删除（避免和 toolbar 重复），侧栏搜索保留在内容区。
+- 示例：title = 当前分组，subtitle = 数量；toolbar leading = 侧栏折叠，trailing = 搜索、排序菜单、新增按钮；原来的页内搜索/排序/加号删除。
+- Agent：title = 当前对话，subtitle = `Agent · Model`；toolbar leading = 侧栏折叠、新建对话，trailing = ⋯ 菜单（重命名/复制/删除）、Agent 菜单、分享；侧栏的“新建对话”行删除（避免和 toolbar 重复），侧栏搜索保留在内容区。
 
 ## 7. 阶段
 
-- **Phase 1（本阶段）**：主窗口原生 toolbar + 标题/副标题 + 按钮/菜单/搜索；示例与 Agent 迁移；删除页面标题条。设置窗口仍用原生标题栏 + Web 标签，页内菜单仍是 Web。
+- **Phase 1（本阶段）**：主窗口原生 toolbar + 标题/副标题 + 按钮/菜单/搜索/侧栏折叠；示例与 Agent 迁移；删除页面标题条。设置窗口仍用原生标题栏 + Web 标签，页内菜单仍是 Web。
 - **Phase 2**：设置窗口分类标签栏改原生（复用同一 item 工厂，加 `tabs`）；页内 `ContextMenu` 改原生 `NSMenu`（复用同一 menu 模型）。
 - **不在 B 范围**：Composer、列表、Markdown、侧栏搜索等内容的原生控件。要做这些是 C 方向，需要另一次决策。
 
@@ -172,7 +183,7 @@ useToolbar(
 
 - 截图中主窗口 toolbar 是 `NSToolbar`，按钮有系统 bezel/hover/焦点，搜索框是 `NSSearchField`，菜单是 `NSMenu`。
 - 页面不再出现自绘标题条；窗口标题/副标题只出现一次（原生 toolbar 里）。
-- 示例：搜索过滤、排序菜单、新增按钮都工作；Agent：新建、⋯ 菜单、Agent 菜单、分享都工作。
+- 示例：搜索过滤、排序菜单、新增按钮、侧栏折叠都工作；Agent：新建、⋯ 菜单、Agent 菜单、分享、侧栏折叠都工作。
 - 深浅色各截一次示例和 Agent；toolbar 背景与侧栏/内容底色关系正确。
 - 宿主不出现任何 app id / app 专属 Swift；只有通用 `NativeToolbarController`。
 - `make lint`、`make test`、`make build`、`make release` 全过。
@@ -184,3 +195,11 @@ useToolbar(
 - 不让 app 传样式或直接创建 AppKit 视图。
 - 不把标题条/工具栏放回页面。
 - 不在本阶段迁设置表单控件、页内菜单、Composer。
+
+## 10. Phase 1 实现
+
+- `[Swift]` `ShellCore/Model/ToolbarSpec.swift`：`ToolbarSpec` / `ToolbarItem` / `ToolbarMenuItem`，纯 `Decodable`，不 import AppKit。
+- `[Swift]` `ShellUI/Toolbar/NativeToolbarController.swift`：唯一的 toolbar 实现，认识 id 不认识 app。leading item 标记 `isNavigational`（AppKit 只有导航项才会排到红绿灯一侧）；结构变化才换 `NSToolbar`，只变 `disabled` 时原地更新，搜索文本由 `NSSearchField` 持有；空 spec 也保留一个 flexible space，保证标题栏高度。
+- `[Swift]` `AppPageController` 在 `viewDidAppear` 给主窗口装 toolbar（设置窗口不装）；`.toolbar` 可先于窗口到达，spec 会保存到安装后应用。
+- `[TS]` `bridge.ts` 增加 `registerToolbar` / `toolbarAction` / `toolbarSearch`；`hooks.ts` 增加 `useToolbar`、`useSidebar`；`components.tsx` 的 `Window` 增加 `sidebar`；`style.css` 删除标题条和拖动样式，给列留 52pt 顶部 inset。
+- 已知差异：统一 toolbar 的标题位置由 AppKit 决定（本实现中标题在 leading 项之后，不居中）；菜单按钮在 icon-only 模式下只显示图标和指示箭头，不显示 `title` 文本；这些会在收尾报告里注明。

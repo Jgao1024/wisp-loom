@@ -3,7 +3,7 @@
 declare global {
   interface Window {
     __wisp_boot: Boot;
-    __wisp_recv(batch: Reply[]): void;
+    __wisp_recv(batch: Incoming[]): void;
     webkit?: { messageHandlers: { wisp: { postMessage(json: string): void } } };
   }
 }
@@ -17,7 +17,11 @@ export interface Boot {
 }
 
 type Reply = { type: "reply"; id: number; result?: unknown; event?: unknown; error?: { code: string; message: string } };
-type Incoming = Reply | { type: "command"; id: string };
+type Incoming =
+  | Reply
+  | { type: "command"; id: string }
+  | { type: "toolbarAction"; id: string }
+  | { type: "toolbarSearch"; text: string };
 
 export const boot: Boot = window.__wisp_boot ?? { appID: "dev", lang: "en", title: "", hasBackend: false, window: "main" };
 
@@ -33,12 +37,22 @@ interface Waiting {
 
 const waiting = new Map<number, Waiting>();
 const commandHandlers = new Map<string, () => void>();
+let toolbarActions: ((id: string) => void) | undefined;
+let toolbarSearchHandler: ((text: string) => void) | undefined;
 let seq = 0;
 
 window.__wisp_recv = (batch) => {
   for (const message of batch as Incoming[]) {
     if (message.type === "command") {
       commandHandlers.get(message.id)?.();
+      continue;
+    }
+    if (message.type === "toolbarAction") {
+      toolbarActions?.(message.id);
+      continue;
+    }
+    if (message.type === "toolbarSearch") {
+      toolbarSearchHandler?.(message.text);
       continue;
     }
     const call = waiting.get(message.id);
@@ -114,4 +128,40 @@ export function registerCommands(commands: CommandSpec[]): void {
   commandHandlers.clear();
   for (const c of commands) commandHandlers.set(c.id, c.run);
   post({ type: "commands", commands: commands.map(({ run: _run, ...rest }) => rest) });
+}
+
+export interface ToolbarMenuItem {
+  id: string;
+  title: string;
+  destructive?: boolean;
+  disabled?: boolean;
+}
+
+export interface ToolbarItem {
+  id: string;
+  symbol?: string;
+  title?: string;
+  help?: string;
+  disabled?: boolean;
+  menu?: ToolbarMenuItem[];
+  search?: boolean;
+  sidebar?: boolean;
+  placeholder?: string;
+}
+
+/** A window toolbar: plain semantics only, every control is native (docs/06-native-toolbar.md §3). */
+export interface ToolbarSpec {
+  leading?: ToolbarItem[];
+  trailing?: ToolbarItem[];
+}
+
+/** Sends this window's toolbar; the host rebuilds only when the structure changes. */
+export function registerToolbar(spec: ToolbarSpec): void {
+  post({ type: "toolbar", spec });
+}
+
+/** The latest toolbar handlers; host clicks and search text are routed here by id. */
+export function setToolbarHandlers(action: (id: string) => void, search?: (text: string) => void): void {
+  toolbarActions = action;
+  toolbarSearchHandler = search;
 }

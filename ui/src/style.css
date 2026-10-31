@@ -23,18 +23,15 @@ body[data-window="settings"] { background: color-mix(in srgb, Canvas 94%, Canvas
 button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
-/* Window shell: the host draws traffic lights over the top-left; the titlebar strip is draggable. */
+/* Window shell: the native toolbar (and its traffic lights) floats over the page; columns keep clear of it. */
 .window { display: flex; flex: 1; min-height: 0; }
 .column { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.window.native .column { padding-top: var(--titlebar); }
 .column.sidebar { width: var(--column-sidebar); flex: none; }
 .column.content { width: var(--column-content); flex: none; background: Canvas; border-inline: 1px solid var(--separator); }
 .column.detail { flex: 1; background: Canvas; }
 .window.two .column.content { display: none; }
-.titlebar { height: var(--titlebar); flex: none; display: flex; align-items: center; gap: var(--space-s); padding: 0 var(--space-m); }
-.column.detail .titlebar { justify-content: flex-end; }
-.titlebar .subtitle { color: var(--text-secondary); font-size: 11px; }
-.titlebar .heading h1 { margin: 0; font-size: 22px; }
-.titlebar .heading { display: flex; flex-direction: column; margin-inline-end: auto; line-height: 1.15; }
+.window.sidebar-hidden .column.sidebar { display: none; }
 .scroll { flex: 1; min-height: 0; overflow: auto; }
 .pad { padding: var(--space-l) var(--space-xl); }
 
@@ -47,8 +44,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .btn.destructive { color: var(--tint-red); }
 .btn.icon { padding: 4px 6px; }
 .btn.icon:not(.prominent) { background: transparent; }
-.group { display: inline-flex; border-radius: var(--radius-control); background: var(--fill); }
-.group > .btn { background: transparent; }
 .spacer { flex: 1; }
 .divider { height: 1px; flex: none; background: var(--separator); border: 0; margin: var(--space-s) 0; }
 .icon-glyph { display: inline-block; width: 1.1em; height: 1.1em; background: currentColor; -webkit-mask: var(--glyph) center / contain no-repeat; mask: var(--glyph) center / contain no-repeat; flex: none; }
@@ -131,7 +126,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .tab.active { background: Canvas; color: var(--accent); }
 @media (prefers-color-scheme: dark) { .tab.active { background: var(--fill); } }
 .tab .icon-glyph { font-size: 22px; }
-.group > .menu { display: inline-flex; }
 
 /* Markdown */
 .markdown { font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; }
@@ -163,11 +157,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .composer-bar .menu-pop { top: auto; bottom: 100%; margin-top: 0; margin-bottom: 4px; }
 .composer-bar .btn.prominent { width: 26px; height: 26px; min-height: 26px; padding: 0; border-radius: 50%; justify-content: center; }
 .composer-bar .btn.prominent:disabled { background: color-mix(in srgb, CanvasText 10%, transparent); color: var(--text-secondary); opacity: 1; }
-.sidebar-actions { padding: var(--space-s) var(--space-s) 0; }
-.new-chat { display: flex; align-items: center; gap: var(--space-s); width: 100%; padding: 6px var(--space-s); border: 0; border-radius: var(--radius-control); background: transparent; text-align: start; }
-.new-chat:hover { background: var(--fill); }
-.new-chat .icon-glyph { color: var(--text-secondary); }
-.new-chat .shortcut { margin-inline-start: auto; color: var(--text-secondary); font-size: 11px; }
 .sidebar-search { padding: var(--space-s); }
 .sidebar-search .search { max-width: none; }
 .rename { margin: 1px 0; padding: 6px var(--space-s); border: 0; border-radius: var(--radius-control); background: var(--fill); outline: 2px solid var(--accent); font: inherit; -webkit-user-select: text; user-select: text; }

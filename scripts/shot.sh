@@ -139,14 +139,15 @@ done
 # The window is up but WebKit may still be painting the first frame.
 sleep "$delay"
 # A script-launched app is not guaranteed to be frontmost, and an inactive window swallows the first click.
-# Activate it, then click the empty sidebar strip left of the content (right of the traffic lights) so the
-# window is key before the real actions; on settings windows that point is the native titlebar.
+# Activate it, then click the empty middle of the titlebar so the window is key before the real actions;
+# the edges may hold toolbar buttons now that the window chrome is native. On settings windows that point
+# is the native titlebar too.
 "$event_helper" activate "$bundle_id"
 sleep 0.2
 window=$("$window_helper" "${find_args[@]}" 2>/dev/null || true)
 [ -n "$window" ] || { echo "shot.sh: window disappeared before activation" >&2; exit 1; }
-IFS=$'\t' read -r _ window_x window_y _ _ _ <<<"$window"
-"$event_helper" click $((window_x + 120)) $((window_y + 16))
+IFS=$'\t' read -r _ window_x window_y window_width _ _ <<<"$window"
+"$event_helper" click $((window_x + window_width / 2)) $((window_y + 16))
 sleep 0.3
 
 if [ ${#actions[@]} -gt 0 ]; then

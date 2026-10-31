@@ -5,9 +5,8 @@ public enum WindowRequest: Sendable, Equatable {
     case title(String, subtitle: String?)
     /// Content height the page wants (settings panes); the host animates the window to it.
     case contentHeight(Double)
-    /// The titlebar area is part of the page, so it asks to start a window drag / zoom.
-    case drag
-    case zoom
+    /// The window's native toolbar, described by the page.
+    case toolbar(ToolbarSpec)
 }
 
 /// One app window's link to its host session. The page speaks the backend's JSON Lines dialect over a
@@ -29,6 +28,8 @@ public protocol AppConnection: AnyObject {
     var onWindow: (@MainActor (WindowRequest) -> Void)? { get set }
     /// Page → host: one JSON message.
     func receive(_ json: String)
+    /// Host → page: one message on the same batched channel as replies (toolbar actions, search).
+    func push(_ message: [String: JSONValue])
     /// The window is gone; in-flight calls are cancelled. Safe to call twice.
     func close()
 }

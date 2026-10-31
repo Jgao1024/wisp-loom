@@ -8,6 +8,13 @@ import WebKit
 public final class AppPageController: NSViewController {
     public let connection: any AppConnection
     private let webView: WKWebView
+    private lazy var toolbarController = NativeToolbarController(
+        onAction: { [weak self] id in
+            self?.connection.push(["type": .string("toolbarAction"), "id": .string(id)])
+        },
+        onSearch: { [weak self] text in
+            self?.connection.push(["type": .string("toolbarSearch"), "text": .string(text)])
+        })
 
     public init(connection: any AppConnection) {
         self.connection = connection
@@ -33,20 +40,19 @@ public final class AppPageController: NSViewController {
     }
 
     private func handle(_ request: WindowRequest) {
-        guard let window = view.window else { return }
         switch request {
         case .title(let title, let subtitle):
-            window.title = title
-            window.subtitle = subtitle ?? ""
-        case .drag:
-            if let event = NSApp.currentEvent { window.performDrag(with: event) }
-        case .zoom:
-            window.zoom(nil)
+            view.window?.title = title
+            view.window?.subtitle = subtitle ?? ""
         case .contentHeight(let height):
+            guard let window = view.window else { return }
             var frame = window.frameRect(
                 forContentRect: CGRect(x: 0, y: 0, width: window.contentLayoutRect.width, height: height))
             frame.origin = CGPoint(x: window.frame.minX, y: window.frame.maxY - frame.height)  // keep the top edge
             window.setFrame(frame, display: true, animate: window.isVisible)
+        case .toolbar(let spec):
+            guard connection.kind == .main else { return }
+            toolbarController.apply(spec)
         }
     }
 
@@ -70,6 +76,12 @@ public final class AppPageController: NSViewController {
         ])
         view = container
         webView.load(URLRequest(url: URL(string: "\(PageScheme.name)://app/index.html")!))
+    }
+
+    /// Main windows always get a toolbar, even before the page sends a spec, so the titlebar height is stable.
+    public override func viewDidAppear() {
+        super.viewDidAppear()
+        if connection.kind == .main, let window = view.window { toolbarController.install(on: window) }
     }
 
     /// Break the handler → connection reference and release the backend link.

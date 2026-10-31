@@ -217,7 +217,12 @@ struct AppSessionTests {
         link.onWindow = { seen.append($0) }
         link.receive(#"{"type":"title","title":"Hi","subtitle":"There"}"#)
         link.receive(#"{"type":"height","value":300}"#)
-        link.receive(#"{"type":"drag"}"#)
-        #expect(seen == [.title("Hi", subtitle: "There"), .contentHeight(300), .drag])
+        link.receive(
+            #"{"type":"toolbar","spec":{"leading":[{"id":"new","symbol":"plus","help":"New"}],"trailing":[{"id":"search","search":true,"placeholder":"Search"}]}}"#
+        )
+        let spec = ToolbarSpec(
+            leading: [ToolbarItem(id: "new", symbol: "plus", help: "New")],
+            trailing: [ToolbarItem(id: "search", search: true, placeholder: "Search")])
+        #expect(seen == [.title("Hi", subtitle: "There"), .contentHeight(300), .toolbar(spec)])
     }
 }

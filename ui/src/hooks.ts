@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
-import { registerCommands, setting, setSetting, type CommandSpec } from "./bridge.ts";
+import { registerCommands, registerToolbar, setToolbarHandlers, setting, setSetting, type CommandSpec, type ToolbarSpec } from "./bridge.ts";
 
 export { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 
@@ -43,6 +43,13 @@ export function useStream(initial = ""): { text: string; append(delta: string): 
   };
 }
 
+/** The sidebar's visibility for this window; pass the toggle to a native sidebar toolbar item. */
+export function useSidebar(initial = true): [boolean, () => void] {
+  const [visible, setVisible] = useState(initial);
+  const toggle = useCallback(() => setVisible((value) => !value), []);
+  return [visible, toggle];
+}
+
 /** Registers menu-bar commands while the component is mounted. */
 export function useCommands(commands: CommandSpec[]): void {
   const key = JSON.stringify(commands.map(({ run: _run, ...rest }) => rest));
@@ -50,5 +57,22 @@ export function useCommands(commands: CommandSpec[]): void {
   latest.current = commands;
   useEffect(() => {
     registerCommands(latest.current.map((c, i) => ({ ...c, run: () => latest.current[i]?.run() })));
+  }, [key]);
+}
+
+/** Declares the window's native toolbar and the handlers its ids call; `onSearch` receives native search text. */
+export function useToolbar(
+  spec: ToolbarSpec,
+  handlers: Record<string, () => void>,
+  onSearch?: (text: string) => void,
+): void {
+  const key = JSON.stringify(spec);
+  const latest = useRef({ spec, handlers, onSearch });
+  latest.current = { spec, handlers, onSearch };
+  useEffect(() => {
+    setToolbarHandlers((id) => latest.current.handlers[id]?.(), (text) => latest.current.onSearch?.(text));
+  }, []);
+  useEffect(() => {
+    registerToolbar(latest.current.spec);
   }, [key]);
 }

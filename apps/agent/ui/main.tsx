@@ -1,8 +1,8 @@
 import "@wisp/ui/style.css";
 import {
-  Button, Composer, ContextMenu, Detail, Empty, Icon, List, Markdown, Menu, Pane, Picker, Row, Scroll, Search, Section,
+  Button, Composer, ContextMenu, Detail, Empty, List, Markdown, Menu, Pane, Picker, Row, Scroll, Search, Section,
   SecureField, Settings, Sidebar, Stack, Text, TextField, Toggle, Window, run, useCommands, useEffect, useMemo, usePersisted,
-  useRef, useState, useStream,
+  useRef, useSidebar, useState, useStream, useToolbar,
 } from "@wisp/ui";
 import { agents, initialConversations, models, streamingReply, type Conversation, type Message } from "./mock.ts";
 
@@ -33,6 +33,7 @@ function Agent() {
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
   const [activeId, setActiveId] = useState<string | null>(initialConversations[0]?.id ?? null);
   const [query, setQuery] = useState("");
+  const [sidebar, toggleSidebar] = useSidebar();
   const [text, setText] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -164,17 +165,50 @@ function Agent() {
   };
 
   useCommands([{ id: "new", menu: "file", title: "新建对话", shortcut: "cmd+n", run: newConversation }]);
+  useToolbar(
+    {
+      leading: [
+        { id: "sidebar", sidebar: true, help: "显示/隐藏侧栏" },
+        { id: "new", symbol: "square.and.pencil", help: "新建对话" },
+      ],
+      trailing: [
+        {
+          id: "more",
+          symbol: "ellipsis",
+          menu: [
+            { id: "rename", title: "重命名" },
+            { id: "copy", title: "复制为 Markdown" },
+            { id: "delete", title: "删除", destructive: true },
+          ],
+        },
+        {
+          id: "agent",
+          title: active?.agent ?? "Wisp Agent",
+          symbol: "person.crop.circle",
+          menu: agents.map((agent) => ({ id: `agent-${agent}`, title: agent })),
+        },
+        { id: "share", symbol: "square.and.arrow.up", help: "分享" },
+      ],
+    },
+    {
+      sidebar: toggleSidebar,
+      new: newConversation,
+      rename: () => active && startRename(active),
+      copy: copyMarkdown,
+      delete: () => active && removeConversation(active.id),
+      share: copyMarkdown,
+      ...Object.fromEntries(agents.map((agent) => [`agent-${agent}`, () => setAgent(agent)])),
+    },
+  );
 
   return (
-    <Window title="Agent" columns={2}>
+    <Window
+      title={active?.title ?? "新对话"}
+      subtitle={active ? `${active.agent} · ${active.model}` : undefined}
+      columns={2}
+      sidebar={sidebar}
+    >
       <Sidebar>
-        <div class="sidebar-actions">
-          <button class="new-chat" onClick={newConversation}>
-            <Icon symbol="square.and.pencil" />
-            <span>新建对话</span>
-            <span class="shortcut">⌘N</span>
-          </button>
-        </div>
         <div class="sidebar-search">
           <Search value={query} placeholder="搜索对话" onInput={setQuery} />
         </div>
@@ -220,25 +254,7 @@ function Agent() {
         </List>
         {filtered.length === 0 && <div class="sidebar-search"><Text style="caption">没有匹配的对话</Text></div>}
       </Sidebar>
-      <Detail
-        title={active?.title ?? "新对话"}
-        subtitle={active ? `${active.agent} · ${active.model}` : undefined}
-        toolbar={
-          <>
-            <Menu symbol="ellipsis">
-              <Button title="重命名" onAction={() => active && startRename(active)} />
-              <Button title="复制为 Markdown" onAction={copyMarkdown} />
-              <Button title="删除" role="destructive" onAction={() => active && removeConversation(active.id)} />
-            </Menu>
-            <Menu title={active?.agent ?? "Wisp Agent"} symbol="person.crop.circle">
-              {agents.map((agent) => (
-                <Button key={agent} title={agent} onAction={() => setAgent(agent)} />
-              ))}
-            </Menu>
-            <Button symbol="square.and.arrow.up" help="导出 Markdown" onAction={copyMarkdown} />
-          </>
-        }
-      >
+      <Detail>
         {hasMessages ? (
           <Scroll anchor="bottom">
             <div class="thread">

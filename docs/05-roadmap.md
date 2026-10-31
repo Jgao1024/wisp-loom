@@ -68,15 +68,16 @@ M0 的第一版是“JSContext + patch 协议 + SwiftUI 节点渲染器”（对
 
 ### 原生窗口控件（Phase 1，规划）
 
-上一版窗口 toolbar 是页面用 CSS 仿的，和 Notes 的 `NSToolbar` 放一起能看出不是原生控件。Phase 1 按 `docs/06-native-toolbar.md` 把窗口级控件收回宿主，内容区仍留在 Web。**未开始**，契约和验收标准已写死。
+上一版窗口 toolbar 是页面用 CSS 仿的，和 Notes 的 `NSToolbar` 放一起能看出不是原生控件。Phase 1 按 `docs/06-native-toolbar.md` 把窗口级控件收回宿主，内容区仍留在 Web。**已完成**（2026-10-31，含侧栏折叠）。
 
 | # | 任务 | 语言 |
 |---|---|---|
-| 1.9 | `ToolbarSpec` + `NativeToolbarController`（按钮/菜单/搜索，通用、不认 app） | `[Swift]` ShellCore + ShellUI |
+| 1.9 | `ToolbarSpec` + `NativeToolbarController`（按钮/菜单/搜索/侧栏折叠，通用、不认 app） | `[Swift]` ShellCore + ShellUI |
 | 1.10 | `toolbar` / `toolbarAction` / `toolbarSearch` 桥 + `useToolbar` + 类型 | `[Swift]` + `[TS]` ui/ |
 | 1.11 | 主窗口去掉页面标题条，标题/副标题进原生 toolbar，内容列加顶部 inset | `[Swift]` + `[TS]` |
 | 1.12 | 示例与 Agent 迁移到 `useToolbar`，删除页内 toolbar | `[TS]` |
 | 1.13 | 深浅色截图、桥/模型测试、lint/test/build/release | `[Swift]` + `[TS]` |
+| 1.14 | 侧栏折叠：`sidebar` toolbar item、`useSidebar`、`Window sidebar` | `[Swift]` + `[TS]` |
 
 Phase 2（不在 1.9–1.13）：设置窗口分类标签栏改原生、页内 `ContextMenu` 改原生 `NSMenu`。Composer、列表、Markdown 等内容的原生控件不在 B 范围。
 

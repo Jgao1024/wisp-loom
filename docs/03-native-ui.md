@@ -18,9 +18,9 @@
 └──────────┴──────────────────────────────────────────────┘
 ```
 
-- `Window columns={2}`：侧栏 + 详情。窗口是 `.fullSizeContentView`，WebView 铺满整个窗口，背后是 `NSVisualEffectView(.sidebar)`；侧栏列不画背景，所以显示系统侧栏材质，内容列和详情列是不透明的 `Canvas`，一直铺到窗口顶，原生 toolbar 透明地盖在上面。
+- `Window columns={2}`：侧栏 + 详情。窗口是 `.fullSizeContentView`，WebView 铺满整个窗口，背后是 `NSVisualEffectView(.sidebar)`；侧栏列不画背景，所以显示系统侧栏材质，内容列和详情列是不透明的 `Canvas`，一直铺到窗口顶，原生 toolbar 透明地盖在上面。侧栏折叠时 `Window sidebar={false}` 给根节点加 `sidebar-hidden`，列直接移出布局，详情占满。
 - 窗口标题/副标题由 `Window title/subtitle` 设置，显示在原生 toolbar 里；页面不再有列标题条。
-- 工具栏用 `useToolbar(spec, handlers, onSearch?)` 声明；按钮、菜单、搜索都是原生控件。红绿灯、拖动、双击缩放全由宿主处理；侧栏折叠按钮等有 app 用到再加。
+- 工具栏用 `useToolbar(spec, handlers, onSearch?)` 声明；按钮、菜单、搜索、侧栏折叠都是原生控件。红绿灯、拖动、双击缩放全由宿主处理。侧栏折叠按钮是 `{ id, sidebar: true }` item，点击后页面用 `useSidebar` 切换 `Window sidebar`。
 
 ### 1.2 三栏（参考密码，图 2）
 
@@ -85,9 +85,10 @@ run(<Main />, (
 
 | 组件 | 说明 | 主要 props |
 |---|---|---|
-| `Window` | 整页布局；标题/副标题进原生 toolbar | `title` `subtitle` `columns`（2/3），子节点 `Sidebar` / `Content` / `Detail` |
+| `Window` | 整页布局；标题/副标题进原生 toolbar | `title` `subtitle` `columns`（2/3）`sidebar`，子节点 `Sidebar` / `Content` / `Detail` |
 | `Sidebar` `Content` `Detail` | 三种内容列，不再有标题/工具栏 | 只有子节点 |
 | `useToolbar` | 原生 toolbar 声明（hook，不是组件） | `spec` `handlers` `onSearch`；见 06 |
+| `useSidebar` | 侧栏显示状态 + 切换函数（hook） | `initial`；结果接 `Window sidebar` 和 `sidebar` toolbar item |
 | `Search` | 内容区搜索框（Agent 侧栏用） | `value` `placeholder` `onInput` |
 | `Button` `Menu` | 内容区按钮、弹出菜单（不用于窗口 toolbar） | `title` `symbol` `role` `prominent` `disabled` `help` `onAction` |
 | `List` `Section` `Row` | 列表（上下键选择） | `selection` `onSelect`；`Row`：`value` `title` `subtitle` `symbol` `badge` `selected` |

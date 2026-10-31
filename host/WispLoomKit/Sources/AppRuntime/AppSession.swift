@@ -133,8 +133,7 @@ public final class AppSession {
                 }
             case "title":
                 onWindow?(.title(message["title"]?.stringValue ?? "", subtitle: message["subtitle"]?.stringValue))
-            case "drag": onWindow?(.drag)
-            case "zoom": onWindow?(.zoom)
+            case "toolbar": applyToolbar(message)
             case "height": message["value"]?.numberValue.map { onWindow?(.contentHeight($0)) }
             case "setting": answerSetting(message)
             case "setSetting": storeSetting(message)
@@ -220,6 +219,13 @@ public final class AppSession {
                 let commands = try? JSONDecoder().decode([AppCommand].self, from: data)
             else { return }
             session.setCommands(commands)
+        }
+
+        private func applyToolbar(_ message: [String: JSONValue]) {
+            guard let value = message["spec"], let data = try? JSONEncoder().encode(value),
+                let spec = try? JSONDecoder().decode(ToolbarSpec.self, from: data)
+            else { return }
+            onWindow?(.toolbar(spec))
         }
 
         // MARK: Delivery
