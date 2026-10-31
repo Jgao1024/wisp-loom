@@ -12,7 +12,12 @@
     "skipLibCheck": true,
     "types": [],
     "jsx": "react-jsx",
-    "jsxImportSource": "@wisp/ui"
+    "jsxImportSource": "preact",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ]
   },
   "include": [
     "sdk/ts",

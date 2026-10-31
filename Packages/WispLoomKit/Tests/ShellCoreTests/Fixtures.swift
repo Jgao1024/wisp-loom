@@ -11,6 +11,7 @@ enum Fixtures {
           "symbol": "sparkles",
           "tint": "purple",
           "ui": "ui.js",
+          "settings": true,
           "backend": { "exec": ["backend/echo"], "idle": 30 },
           "window": { "size": [1100, 720], "min": [720, 480] }
         }
@@ -19,14 +20,4 @@ enum Fixtures {
     static func manifest(_ json: String = manifestJSON) throws -> Manifest {
         try Manifest.decode(Data(json.utf8))
     }
-
-    static func patch(_ json: String) throws -> UIPatch {
-        try JSONDecoder().decode(UIPatch.self, from: Data(json.utf8))
-    }
-
-    static func node(
-        _ id: String, _ type: String = "Text", props: [String: JSONValue] = [:], _ children: [UINodeData] = []
-    )
-        -> UINodeData
-    { UINodeData(id: id, type: type, props: props, children: children) }
 }

@@ -22,7 +22,8 @@ for (const name of names) {
     format: "iife",
     target: "es2022",
     jsx: "automatic",
-    jsxImportSource: "@wisp/ui",
+    jsxImportSource: "preact",
+    minify: !watch,
     logLevel: "warning",
   };
   if (watch) await (await context(options)).watch();

@@ -1,52 +1,54 @@
-import { defer, useHook } from "./reconciler.ts";
-import { Stream } from "./stream.ts";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import { registerCommands, setting, setSetting, type CommandSpec } from "./bridge.ts";
 
-type Deps = readonly unknown[];
+export { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 
-const same = (a: Deps | undefined, b: Deps) => !!a && a.length === b.length && a.every((v, i) => Object.is(v, b[i]));
-
-export function useState<T>(initial: T | (() => T)): [T, (next: T | ((prev: T) => T)) => void] {
-  const slot = useHook((comp, session) => {
-    const slot = {
-      value: typeof initial === "function" ? (initial as () => T)() : initial,
-      set(next: T | ((prev: T) => T)) {
-        const value = typeof next === "function" ? (next as (p: T) => T)(slot.value) : next;
-        if (!comp.alive || Object.is(value, slot.value)) return;
-        slot.value = value;
-        session.schedule();
-      },
-    };
-    return slot;
-  });
-  return [slot.value, slot.set];
+/** A setting backed by the shell's per-app store; shows `fallback` until the stored value arrives. */
+export function usePersisted<T>(key: string, fallback: T): [T, (value: T) => void] {
+  const [value, setValue] = useState(fallback);
+  useEffect(() => {
+    void setting(key, fallback).then(setValue);
+  }, [key]);
+  const save = useCallback(
+    (next: T) => {
+      setSetting(key, next);
+      setValue(next);
+    },
+    [key],
+  );
+  return [value, save];
 }
 
-/** Runs after the commit; without deps, after every render. The returned function cleans up. */
-export function useEffect(effect: () => void | (() => void), deps?: Deps): void {
-  const slot = useHook(() => ({ ran: false, deps: undefined as Deps | undefined, cleanup: undefined as (() => void) | undefined }));
-  if (slot.ran && deps && same(slot.deps, deps)) return;
-  slot.ran = true;
-  slot.deps = deps;
-  defer(() => {
-    slot.cleanup?.();
-    slot.cleanup = effect() ?? undefined;
-  });
+/** Text that grows by `append`; re-renders at most once per frame however fast deltas arrive. */
+export function useStream(initial = ""): { text: string; append(delta: string): void; set(value: string): void } {
+  const [text, setText] = useState(initial);
+  const buffer = useRef(initial);
+  const frame = useRef(0);
+  const push = useCallback(() => {
+    frame.current ||= requestAnimationFrame(() => {
+      frame.current = 0;
+      setText(buffer.current);
+    });
+  }, []);
+  return {
+    text,
+    append(delta) {
+      buffer.current += delta;
+      push();
+    },
+    set(value) {
+      buffer.current = value;
+      push();
+    },
+  };
 }
 
-export function useMemo<T>(compute: () => T, deps: Deps): T {
-  const slot = useHook(() => ({ deps: undefined as Deps | undefined, value: undefined as T }));
-  if (!same(slot.deps, deps)) {
-    slot.value = compute();
-    slot.deps = deps;
-  }
-  return slot.value;
-}
-
-export function useRef<T>(initial: T): { current: T } {
-  return useHook(() => ({ current: initial }));
-}
-
-/** One stream per component instance; pass it as a prop value and `append` to it. */
-export function useStream(initial = ""): Stream {
-  return useHook(() => new Stream(initial));
+/** Registers menu-bar commands while the component is mounted. */
+export function useCommands(commands: CommandSpec[]): void {
+  const key = JSON.stringify(commands.map(({ run: _run, ...rest }) => rest));
+  const latest = useRef(commands);
+  latest.current = commands;
+  useEffect(() => {
+    registerCommands(latest.current.map((c, i) => ({ ...c, run: () => latest.current[i]?.run() })));
+  }, [key]);
 }

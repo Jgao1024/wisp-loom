@@ -10,6 +10,7 @@ public struct AppDescriptor: Identifiable, Sendable, Hashable {
     public let keywords: [String]
     public let defaultSize: CGSize
     public let minimumSize: CGSize
+    public let hasSettings: Bool
     private let manifest: Manifest?
 
     public init(
@@ -20,7 +21,8 @@ public struct AppDescriptor: Identifiable, Sendable, Hashable {
         category: String,
         keywords: [String] = [],
         defaultSize: CGSize = CGSize(width: 900, height: 600),
-        minimumSize: CGSize = CGSize(width: 480, height: 320)
+        minimumSize: CGSize = CGSize(width: 480, height: 320),
+        hasSettings: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -30,6 +32,7 @@ public struct AppDescriptor: Identifiable, Sendable, Hashable {
         self.keywords = keywords
         self.defaultSize = defaultSize
         self.minimumSize = minimumSize
+        self.hasSettings = hasSettings
         manifest = nil
     }
 
@@ -42,6 +45,7 @@ public struct AppDescriptor: Identifiable, Sendable, Hashable {
         keywords = []
         defaultSize = manifest.defaultSize
         minimumSize = manifest.minimumSize
+        hasSettings = manifest.hasSettings
         self.manifest = manifest
     }
 

@@ -41,6 +41,18 @@ public final class WindowFactory {
         return window
     }
 
+    /// A small fixed-width window whose title follows the page (`document.title`); size comes from the page.
+    public func makeSettingsWindow(for app: AppDescriptor, content: NSViewController) -> NSWindow {
+        let window = NSWindow(contentViewController: content)
+        window.styleMask = [.titled, .closable]
+        window.title = app.name
+        window.setContentSize(CGSize(width: 560, height: 420))
+        window.isReleasedWhenClosed = false
+        window.center()
+        return window
+    }
+
+    /// The shell's own settings: the same toolbar-tab structure every settings window used before the web switch.
     public func makeSettingsWindow(panes: [SettingsPane]) -> NSWindow {
         let tabs = SettingsTabController()
         tabs.tabStyle = .toolbar

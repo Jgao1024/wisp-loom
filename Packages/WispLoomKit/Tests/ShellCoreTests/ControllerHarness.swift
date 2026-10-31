@@ -4,7 +4,8 @@ import Foundation
 
 @MainActor
 final class ControllerHarness {
-    let notes = AppDescriptor(id: "test.notes", name: "Notes", symbolName: "note.text", tint: .yellow, category: "A")
+    let notes = AppDescriptor(
+        id: "test.notes", name: "Notes", symbolName: "note.text", tint: .yellow, category: "A", hasSettings: true)
     let windows = FakeWindowManager()
     let presenter = FakePresenter()
     let hotKeys = FakeHotKeys()

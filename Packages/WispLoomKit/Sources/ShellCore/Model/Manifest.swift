@@ -17,10 +17,12 @@ public struct Manifest: Sendable, Hashable, Decodable {
     public let tint: AppTint
     public let ui: String
     public let backend: Backend?
+    /// The app has a settings window (menu item ⌘,).
+    public let hasSettings: Bool
     public let defaultSize: CGSize
     public let minimumSize: CGSize
 
-    private enum CodingKeys: String, CodingKey { case id, name, category, symbol, tint, ui, backend, window }
+    private enum CodingKeys: String, CodingKey { case id, name, category, symbol, tint, ui, backend, settings, window }
     private struct Window: Decodable { let size: [Double]?, min: [Double]? }
 
     public init(from decoder: any Decoder) throws {
@@ -35,6 +37,7 @@ public struct Manifest: Sendable, Hashable, Decodable {
         tint = try c.decodeIfPresent(AppTint.self, forKey: .tint) ?? .accent
         ui = try c.decode(String.self, forKey: .ui)
         backend = try c.decodeIfPresent(Backend.self, forKey: .backend)
+        hasSettings = try c.decodeIfPresent(Bool.self, forKey: .settings) ?? false
         let window = try c.decodeIfPresent(Window.self, forKey: .window)
         defaultSize = Self.size(window?.size) ?? CGSize(width: 900, height: 600)
         minimumSize = Self.size(window?.min) ?? CGSize(width: 480, height: 320)

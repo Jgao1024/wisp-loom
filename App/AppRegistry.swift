@@ -1,12 +1,10 @@
 import AppKit
 import AppRuntime
 import ShellCore
-import ShellPlatform
 import ShellUI
-import SwiftUI
 
-/// Knows the installed apps and owns the running ones. Sessions are created on first use and
-/// released with their last window.
+/// Knows the installed apps and owns the running ones. A session is created on an app's first window and
+/// dropped with its last one.
 @MainActor
 final class AppRegistry {
     private let state: ShellState
@@ -15,6 +13,9 @@ final class AppRegistry {
     private let log: @Sendable (String) -> Void
     private(set) var bundles: [AppBundle] = []
     private var sessions: [AppID: AppSession] = [:]
+    /// Called when any app's command list changes, so the menu bar can rebuild.
+    var onCommandsChange: (@MainActor () -> Void)?
+    var openSettings: (@MainActor (AppID) -> Void)?
 
     init(state: ShellState, dataRoot: URL, log: @escaping @Sendable (String) -> Void) {
         self.state = state
@@ -22,53 +23,35 @@ final class AppRegistry {
         self.log = log
     }
 
-    func descriptors(for language: Language) -> [AppDescriptor] {
-        bundles.map { AppDescriptor($0.manifest, language: language) }
-    }
-
     func load(from roots: [URL]) -> [AppDescriptor] {
         bundles = AppCatalog.scan(roots, log: log)
         for bundle in bundles { sessions[bundle.manifest.id]?.update(bundle) }
-        return descriptors(for: state.language)
+        return bundles.map { AppDescriptor($0.manifest, language: state.language) }
     }
 
-    /// Dev-time reload of one running app; apps without a session pick the change up when they start.
+    /// Dev-time change of a running app; apps without a session pick it up when they start.
     func apply(_ change: AppChange) {
         switch change {
-        case .script(let id): sessions[id]?.reloadScript()
+        case .script(let id): sessions[id]?.reloadPages()
         case .backend(let id): sessions[id]?.restartBackend()
         case .manifest: break
         }
     }
 
-    /// Window content for an app; the first window starts the app.
-    func makeContent(for app: AppDescriptor) -> NSViewController? {
+    func makeContent(for app: AppDescriptor, kind: WindowInstance.Kind) -> NSViewController? {
         guard let session = session(for: app.id) else { return nil }
-        session.retain()
-        let events = UIEvents { [weak session] handler, value in session?.dispatch(handler: handler, value: value) }
-        return NSHostingController(rootView: AppWindowView(state: state, tree: session.tree, events: events))
+        return AppPageController(connection: session.connect(kind: kind))
     }
 
-    func windowClosed(_ id: AppID) { sessions[id]?.release() }
-
-    func tree(for id: AppID) -> UITree? { sessions[id]?.tree }
-
-    func dispatch(_ id: AppID, handler: String) { sessions[id]?.dispatch(handler: handler, value: nil) }
-
-    /// Panes the app declared with `<Settings>`. The settings window keeps the app running like any other
-    /// window does, so it takes a reference only when it will really open.
-    func settingsPanes(for app: AppDescriptor) -> [SettingsPane] {
-        guard let session = sessions[app.id] else { return [] }
-        let nodes = session.tree.nodes(ofType: "Pane")
-        guard !nodes.isEmpty else { return [] }
-        session.retain()
-        let events = UIEvents { [weak session] handler, value in session?.dispatch(handler: handler, value: value) }
-        return nodes.map { node in
-            SettingsPane(
-                id: node.id, title: node.string("title") ?? "", symbol: node.string("symbol") ?? "gearshape",
-                content: NSHostingController(rootView: PaneView(node: node, state: state, events: events)))
-        }
+    /// Releases the window's link; the app's last window takes the session (and backend) with it.
+    func windowClosed(_ id: AppID, content: NSViewController?) {
+        (content as? AppPageController)?.tearDown()
+        if let session = sessions[id], !session.isRunning { sessions[id] = nil }
     }
+
+    func commands(for id: AppID) -> [AppCommand] { sessions[id]?.commands ?? [] }
+
+    func fire(_ command: String, in id: AppID) { sessions[id]?.fire(command: command) }
 
     private func session(for id: AppID) -> AppSession? {
         if let existing = sessions[id] { return existing }
@@ -76,6 +59,8 @@ final class AppRegistry {
         let state = state
         let session = AppSession(
             bundle: bundle, dataRoot: dataRoot, language: { state.language }, secrets: secrets, log: log)
+        session.onCommandsChange = { [weak self] in self?.onCommandsChange?() }
+        session.onOpenSettings = { [weak self] in self?.openSettings?(id) }
         sessions[id] = session
         return session
     }

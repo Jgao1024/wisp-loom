@@ -1,4 +1,5 @@
 import CoreGraphics
+import Foundation
 import Testing
 
 @testable import ShellCore
@@ -10,6 +11,7 @@ struct ManifestTests {
         #expect(manifest.tint == .purple)
         #expect(manifest.backend?.exec == ["backend/echo"])
         #expect(manifest.backend?.idle == 30)
+        #expect(manifest.hasSettings)
         #expect(manifest.defaultSize == CGSize(width: 1100, height: 720))
         #expect(manifest.minimumSize == CGSize(width: 720, height: 480))
     }
@@ -38,6 +40,7 @@ struct ManifestTests {
         let manifest = try Fixtures.manifest(
             #"{"id":"a","name":"A","symbol":"star","ui":"ui.js"}"#)
         #expect(manifest.backend == nil)
+        #expect(!manifest.hasSettings)
         #expect(manifest.tint == .accent)
         #expect(manifest.defaultSize == CGSize(width: 900, height: 600))
     }
@@ -51,5 +54,12 @@ struct ManifestTests {
         #expect(app.name == "示例")
         #expect(app.localized(.en).name == "Sample")
         #expect(app.symbolName == "sparkles")
+    }
+
+    @Test func commandDecodesShortcutAndDisabled() throws {
+        let json = #"{"id":"new","menu":"file","title":"New","shortcut":"cmd+n","disabled":true}"#
+        let command = try JSONDecoder().decode(AppCommand.self, from: Data(json.utf8))
+        #expect(command.shortcut == Shortcut("cmd+n"))
+        #expect(!command.isEnabled)
     }
 }

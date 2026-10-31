@@ -31,9 +31,9 @@ final class CompositionRoot {
         let send: (ShellAction) -> Void = { [weak controller] in controller?.dispatch($0) }
 
         var hotReloader: HotReloader?
-        windows.contentProvider = { registry.makeContent(for: $0) }
-        windows.settingsProvider = { registry.settingsPanes(for: $0) }
-        windows.windowDidClose = { registry.windowClosed($0) }
+        windows.contentProvider = { registry.makeContent(for: $0, kind: $1) }
+        windows.windowDidClose = { registry.windowClosed($0, content: $2) }
+        registry.openSettings = { [weak controller] in controller?.dispatch(.openAppSettings($0)) }
         presenter.launcherContent = { NSHostingController(rootView: LauncherView(state: state, send: send)) }
         presenter.settingsPanes = {
             [

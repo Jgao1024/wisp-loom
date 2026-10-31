@@ -5,6 +5,9 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./jsx-runtime": "./src/jsx-runtime.ts"
+    "./style.css": "./src/style.css"
+  },
+  "dependencies": {
+    "preact": "11.1.0"
   }
 }

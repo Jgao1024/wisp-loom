@@ -121,4 +121,12 @@ struct ShellControllerTests {
         h.controller.dispatch(.closeApp(h.notes.id))
         #expect(h.windows.closedApps == [h.notes.id])
     }
+
+    @Test func appWithoutSettingsIgnoresOpenAppSettings() {
+        let h = ControllerHarness()
+        let plain = AppDescriptor(id: "test.plain", name: "Plain", symbolName: "star", tint: .blue, category: "A")
+        h.controller.setApps([h.notes, plain])
+        h.controller.dispatch(.openAppSettings(plain.id))
+        #expect(h.windows.settingsOpened.isEmpty)
+    }
 }

@@ -56,7 +56,7 @@ public final class ShellController {
                 windows.openWindow(for: app)
             }
         case .openAppSettings(let id):
-            guard let app = state.app(for: id) else { return }
+            guard let app = state.app(for: id), app.hasSettings else { return }
             presenter.hideLauncher()
             if let window = state.window(for: id, kind: .settings) {
                 windows.focusWindow(window.id)

@@ -25,7 +25,7 @@ public struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: SettingsMetrics.paneWidth)
+        .frame(width: 480)
         .fixedSize(horizontal: false, vertical: true)
         .environment(\.locale, state.language.locale)
     }

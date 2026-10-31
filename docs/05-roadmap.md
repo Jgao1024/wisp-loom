@@ -2,23 +2,52 @@
 
 一个阶段一个或几个会话。每个任务标语言；每步完成都要过 `make build`、`make test`、`make lint` 和一次 Release 构建，界面任务还要和对应系统 app 截图对比。
 
-## M0 · 平台底座（已完成）
+## M0 · 平台底座（已完成，按 Raycast 2.0 的四层重做）
 
-代码、单测与构建已完成并通过 `make lint` / `make test` / `make build` / Release 构建。需要人工确认的：与系统 app 的截图对比（0.5、0.9）、菜单栏粗体名称（0.8）、全局快捷键、设置窗口切换分类时的高度动画。
+代码、单测与构建已完成。需要人工确认的：与系统 app 的截图对比（三栏窗口、设置窗口）、菜单栏粗体名称、全局快捷键、设置窗口切换分类时的高度动画、侧栏材质穿透效果、`make dev` 的端到端热重载。
 
-| # | 任务 | 语言 | 完成标准 |
+| # | 任务 | 语言 | 状态 |
 |---|---|---|---|
-| 0.1 | `UITree` 节点表 + patch 应用（副本提交、rev 校验） | `[Swift]` ShellCore | 单测覆盖 6 种 op、旧 rev、失败回滚 |
-| 0.2 | TS SDK：JSX 运行时、hooks、key diff、批量 commit、`call` | `[TS]` sdk/ts | `node --test` 覆盖 diff 输出的 op |
-| 0.3 | `AppRuntime`：JSContext 线程、`__wisp` 注入、timer、console | `[Swift]` AppRuntime | 单测：脚本 commit 的 patch 到达 Swift |
-| 0.4 | manifest 加载与多语言，替换 `AppDescriptor.samples` | `[Swift]` ShellCore + App | 启动器显示 `apps/` 下的 app |
-| 0.5 | 原生渲染器第一批：Window、Split、Toolbar 系列、Button、Menu、List 系列、Text、Stack、Empty | `[Swift]` ShellUI | 示例 app 两栏 / 三栏截图对比手记、密码 |
-| 0.6 | 后端通道：按需启动、JSON Lines、并发、取消、空闲退出、崩溃恢复 | `[Swift]` AppRuntime | 用假后端脚本跑通全部状态 |
-| 0.7 | 后端 SDK | `[Rust]` sdk/rust、`[Py]` sdk/py | echo 示例 app 用两种语言各跑一次 |
-| 0.8 | 菜单栏：regular / accessory 切换、按 key 窗口重建、`Command` | `[Swift]` ShellPlatform | 图 3 的菜单结构；实测菜单栏粗体名称 |
-| 0.9 | 设置窗口框架：toolbar 分类、Form、Toggle / Picker / TextField / SecureField；壳设置迁过去 | `[Swift]` ShellUI + ShellPlatform | 截图对比图 4 |
-| 0.10 | Keychain `shell.secret.*` | `[Swift]` AppRuntime | 单测；TS 读不到明文 |
-| 0.11 | `make apps` 构建 + 开发期 FSEvents 热重载 | 构建脚本 + `[Swift]` | 改 tsx 后窗口内容替换、不重开 |
+| 0.1 | manifest 解码与多语言回落，替换 `AppDescriptor.samples` | `[Swift]` ShellCore | 完成，有单测 |
+| 0.2 | TS SDK：Preact + 设计系统组件 + 桥（`call` / 设置 / 命令 / 流式） | `[TS]` sdk/ts | 完成，`node --test` 覆盖桥协议 |
+| 0.3 | `AppSession`：每窗口一条连接、后端共享、命令、设置广播 | `[Swift]` AppRuntime | 完成，有单测 |
+| 0.4 | WKWebView 承载：`wisp://` scheme、message handler、SF Symbol 路由、窗口请求 | `[Swift]` ShellUI | 完成 |
+| 0.5 | 后端通道：按需启动、JSON Lines、并发、取消、空闲退出、崩溃恢复 | `[Swift]` AppRuntime | 完成，假后端脚本跑通全部状态 |
+| 0.6 | 后端 SDK | `[Rust]` sdk/rust、`[Py]` sdk/py | 完成，各有测试 |
+| 0.7 | 菜单栏：regular / accessory 切换、按 key 窗口重建、命令 | `[Swift]` ShellPlatform | 完成，需人工确认 |
+| 0.8 | 设置窗口：app 设置是同页面的 `<Settings>`；壳设置用 toolbar 标签 | `[TS]` + `[Swift]` | 完成，需人工确认 |
+| 0.9 | Keychain `shell.secret.*` | `[Swift]` AppRuntime | 完成，页面读不到明文 |
+| 0.10 | `make apps` 构建 + 开发期 FSEvents 热重载 | 构建脚本 + `[Swift]` | 完成 |
+
+### 为什么从原生渲染改成 WKWebView
+
+M0 的第一版是“JSContext + patch 协议 + SwiftUI 节点渲染器”（对应 Raycast v1 的做法）。读了 Raycast 官方文章和 8 个大型插件的源码后改掉：
+
+- Raycast v1 的插件只能选宿主预设的页面模板（List / Detail / Form / Grid），所以不改宿主；我们要自己做很多界面各异的应用，每种新布局都要改 Swift，不可持续。
+- Raycast 2.0 的界面全部在 Web 前端，Swift 宿主只管窗口、热键、菜单栏和进程监管；我们照这个分层。
+- JSContext 里没有 `fetch` 等 Web API，放开能力要自己逐个实现；WebView 自带。
+
+### 内存与耗时实测（M0 小验证）
+
+5000 行列表，Preact 渲染，WKWebView（Debug 单窗口，Apple Silicon）：
+
+| | 数值 |
+|---|---|
+| JS 渲染 5000 行 | 约 50–65 ms |
+| 窗口出现到首帧（含 WebContent 进程启动） | 约 200–300 ms；空页面约 160 ms |
+| WebContent 常驻内存 | 约 93 MB（空页面约 24 MB） |
+| 壳进程 | 约 87 MB（验证程序，未含 M0 的其余代码） |
+
+因此：长列表在几千行量级可以先整表渲染；窗口首次打开有进程启动成本（约 100–150 ms），如果后续觉得慢，可以预热一个空 WebView。这些数字只是量级，没有和 SwiftUI 版本做同条件对比。
+
+### 与文档的差异
+
+- 页面桥是 `window.webkit.messageHandlers.wisp` 加 `window.__wisp_recv`，不再有 `__wisp` 全局、JSContext、`UITree` 和 patch 协议。
+- app 的 `ui.css` 与 `ui.js` 同名同目录，由宿主合成的入口页引用。
+- manifest 增加可选的 `settings` 布尔值。
+- app 入口改为纯 AppKit `main.swift`（SwiftUI `App` 生命周期会覆盖主菜单）。
+- Rust 后端在仓库根的 cargo workspace 里，产物统一到 `build/cargo`；FSEvents 监听只在设置了 `WISP_APPS` 时启用。
+- 设置窗口在页面里自己报告内容高度，宿主据此调整窗口高度（保持顶边不动）。
 
 ## M1 · Agent 能对话
 
