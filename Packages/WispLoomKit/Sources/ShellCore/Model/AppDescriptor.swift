@@ -1,5 +1,6 @@
 import CoreGraphics
 
+/// What the launcher and window manager need to know about an app, resolved for one language.
 public struct AppDescriptor: Identifiable, Sendable, Hashable {
     public let id: AppID
     public let name: String
@@ -9,6 +10,7 @@ public struct AppDescriptor: Identifiable, Sendable, Hashable {
     public let keywords: [String]
     public let defaultSize: CGSize
     public let minimumSize: CGSize
+    private let manifest: Manifest?
 
     public init(
         id: AppID,
@@ -28,5 +30,23 @@ public struct AppDescriptor: Identifiable, Sendable, Hashable {
         self.keywords = keywords
         self.defaultSize = defaultSize
         self.minimumSize = minimumSize
+        manifest = nil
+    }
+
+    public init(_ manifest: Manifest, language: Language) {
+        id = manifest.id
+        name = manifest.name.resolve(language)
+        symbolName = manifest.symbol
+        tint = manifest.tint
+        category = manifest.category.resolve(language)
+        keywords = []
+        defaultSize = manifest.defaultSize
+        minimumSize = manifest.minimumSize
+        self.manifest = manifest
+    }
+
+    /// Same app with name and category re-resolved; descriptors without a manifest are returned as is.
+    public func localized(_ language: Language) -> AppDescriptor {
+        manifest.map { AppDescriptor($0, language: language) } ?? self
     }
 }

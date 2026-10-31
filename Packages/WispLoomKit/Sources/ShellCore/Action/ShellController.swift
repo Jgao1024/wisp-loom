@@ -76,10 +76,16 @@ public final class ShellController {
             hotKey.store(in: defaults)
         case .setLanguage(let language):
             state.language = language
+            state.apps = state.apps.map { $0.localized(language) }
             language.store(in: defaults)
         case .quit:
             onQuit()
         }
+    }
+
+    /// Replaces the launcher's apps (initial scan, manifest hot reload).
+    public func setApps(_ apps: [AppDescriptor]) {
+        state.apps = apps.map { $0.localized(state.language) }
     }
 
     private func register(_ hotKey: HotKey) -> Bool {

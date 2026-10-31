@@ -3,7 +3,7 @@ import Observation
 @MainActor
 @Observable
 public final class ShellState {
-    public let apps: [AppDescriptor]
+    public internal(set) var apps: [AppDescriptor]
     public internal(set) var windows: [WindowInstance] = []
     public internal(set) var launcherStyle: LauncherStyle
     public internal(set) var hotKey: HotKey

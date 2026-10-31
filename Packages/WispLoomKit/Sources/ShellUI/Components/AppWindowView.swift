@@ -13,5 +13,7 @@ public struct AppWindowView: View {
 }
 
 #Preview {
-    AppWindowView(app: AppDescriptor.samples[0]).frame(width: 480, height: 320)
+    AppWindowView(
+        app: AppDescriptor(id: "preview", name: "Preview", symbolName: "star.fill", tint: .blue, category: "")
+    ).frame(width: 480, height: 320)
 }

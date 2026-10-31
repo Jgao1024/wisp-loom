@@ -29,7 +29,7 @@ struct GridLauncher: View {
                         } label: {
                             VStack(spacing: Spacing.s) {
                                 AppIconView(app)
-                                Text(LocalizedStringKey(app.name)).lineLimit(1)
+                                Text(verbatim: app.name).lineLimit(1)
                             }
                             .frame(maxWidth: .infinity)
                         }
@@ -71,7 +71,7 @@ struct GridLauncher: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: Spacing.s) {
                 ForEach(categories, id: \.self) { name in
-                    Button(LocalizedStringKey(name)) { category = category == name ? nil : name }
+                    Button(name) { category = category == name ? nil : name }
                         .buttonStyle(.plain)
                         .padding(.horizontal, Spacing.m)
                         .padding(.vertical, Spacing.xs)
@@ -84,5 +84,5 @@ struct GridLauncher: View {
 }
 
 #Preview {
-    GridLauncher(apps: AppDescriptor.samples, send: { _ in })
+    GridLauncher(apps: [], send: { _ in })
 }

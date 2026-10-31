@@ -2,14 +2,26 @@
 
 Wisp Loom：macOS 快捷键浮窗启动器（SwiftUI + AppKit），计划开源。功能清单见 `FEATURES.md`。
 
+下一阶段做应用插件平台和第一个应用 Agent，开工前读：
+
+| 文档 | 内容 |
+|---|---|
+| `docs/01-architecture.md` | 进程模型、语言分工、分层、依赖、目录 |
+| `docs/02-app-protocol.md` | manifest、界面桥、后端通道、热重载 |
+| `docs/03-native-ui.md` | 两栏/三栏布局、菜单栏、设置窗口、组件清单 |
+| `docs/04-agent-app.md` | Agent 应用的界面、数据、后端协议 |
+| `docs/05-roadmap.md` | 分阶段任务，每项标注语言 |
+
+规划和任务都要写明各部分用什么语言：`[Swift]` `[TS]` `[Rust]` `[Py]` `[Go]`。
+
 ## 规范
 
 - 精简优雅优先：重复两次就抽出来，不为以后写代码，配置同样要精简。
 - 注释非必要不写，只标关键点。
-- 不加第三方依赖。
+- 壳不加第三方依赖；插件后端只用 `docs/01-architecture.md` 第 5 节的白名单，版本锁死。
 - 只在 `ShellController` 里改 `ShellState`；只在 `WindowFactory` 里创建 `NSWindow` / `NSPanel`。
-- 玻璃效果只走 `GlassStyles`，尺寸、间距、圆角只走设计令牌。
-- 依赖只能向下：`ShellCore`（纯逻辑，不 import AppKit/SwiftUI）← `ShellUI` / `ShellPlatform`（互不依赖）← `App`（唯一装配点）。
+- 玻璃效果只走 `GlassStyles`，尺寸、间距、圆角只走设计令牌。插件不能传样式，观感照 macOS 原生应用。
+- 依赖只能向下：`ShellCore`（纯逻辑，不 import AppKit/SwiftUI）← `ShellUI` / `ShellPlatform` / `AppRuntime`（互不依赖）← `App`（唯一装配点）。
 
 ## 提交前
 

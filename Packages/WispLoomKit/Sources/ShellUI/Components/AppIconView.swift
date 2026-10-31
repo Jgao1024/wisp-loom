@@ -27,5 +27,6 @@ public struct AppIconView: View {
 }
 
 #Preview {
-    HStack { ForEach(AppDescriptor.samples) { AppIconView($0) } }.padding()
+    AppIconView(AppDescriptor(id: "preview", name: "Preview", symbolName: "star.fill", tint: .blue, category: ""))
+        .padding()
 }
