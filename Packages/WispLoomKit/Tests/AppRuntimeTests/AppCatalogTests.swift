@@ -1,4 +1,5 @@
 import Foundation
+import ShellCore
 import Testing
 
 @testable import AppRuntime

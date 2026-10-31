@@ -19,15 +19,16 @@ Wisp Loom 是 macOS 上的快捷键浮窗启动器。没有自己的桌面、Doc
 
 ## 应用插件（设计见 `docs/`）
 
-- [ ] 加载插件只需改目录地址，不改源码
-- [ ] TS 写界面（内嵌 JavaScriptCore），Rust 写后端，Python 只用于模型等生态，Go 非必要不用
-- [ ] 界面全部映射到原生组件，不用 WebView，插件不能写样式
-- [ ] 界面桥：界面树 patch + 事件；后端通道：stdio JSON Lines
-- [ ] 两栏 / 三栏布局、原生工具栏、app 菜单栏、toolbar 分类的设置窗口
-- [ ] 插件的 app 名、分类带多语言
+- [x] 加载插件只需改目录地址，不改源码
+- [x] TS 写界面（内嵌 JavaScriptCore），Rust 写后端，Python 只用于模型等生态，Go 非必要不用
+- [x] 界面全部映射到原生组件，不用 WebView，插件不能写样式
+- [x] 界面桥：界面树 patch + 事件；后端通道：stdio JSON Lines
+- [x] 开发期热重载：`make dev`（改 tsx 窗口内容替换，改后端自动重启）
+- [x] 两栏 / 三栏布局、原生工具栏、app 菜单栏、toolbar 分类的设置窗口
+- [x] 插件的 app 名、分类带多语言
 
 ## 应用
 
 - [ ] Agent：模型对话，OpenAI / Anthropic 协议先行，Responses / Kiro 随后；Agent 预设、工具、skill、监控逐步补
 
-目前浮窗里的 app 是 `AppDescriptor.samples` 占位数据。
+浮窗里的 app 来自 `apps/` 下的 manifest，示例见 `apps/sample`。

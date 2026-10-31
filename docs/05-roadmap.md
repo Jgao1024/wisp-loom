@@ -2,7 +2,9 @@
 
 一个阶段一个或几个会话。每个任务标语言；每步完成都要过 `make build`、`make test`、`make lint` 和一次 Release 构建，界面任务还要和对应系统 app 截图对比。
 
-## M0 · 平台底座
+## M0 · 平台底座（已完成）
+
+代码、单测与构建已完成并通过 `make lint` / `make test` / `make build` / Release 构建。需要人工确认的：与系统 app 的截图对比（0.5、0.9）、菜单栏粗体名称（0.8）、全局快捷键、设置窗口切换分类时的高度动画。
 
 | # | 任务 | 语言 | 完成标准 |
 |---|---|---|---|
@@ -60,3 +62,11 @@
 - Go：等出现需要独立打包、常驻的服务再定。
 - 插件市场、git / 远程安装：先只支持本地目录。
 - 签名与公证：拿到 Developer ID 后统一处理。
+
+## M0 实现与文档的差异
+
+- 0.2：`__wisp.call` 的签名是 `(method, params, onEvent, onDone)` 返回取消函数（JS 侧 `call()` 封装成 Promise + `abort()`）；`__wisp.lifecycle` 目前只有 `resync`；壳注入 `__wisp.rev` 作为热重载后的起始 rev。
+- 0.4：manifest 的 `category` / `tint` / `window` 可省略；多语言“第一个”按键名排序。
+- 0.5：`Split` 的搜索用 `query` / `onQuery` 属性，`Toolbar` 挂在所属容器下。
+- 0.8：app 入口改为纯 AppKit `main.swift`（SwiftUI `App` 生命周期会覆盖主菜单）。
+- 0.11：Rust 后端在仓库根的 cargo workspace 里，产物统一到 `build/cargo`；监听只在设置了 `WISP_APPS` 时启用。
