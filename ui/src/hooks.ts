@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import {
-  registerCommands, registerToolbar, setTabHandler, setToolbarHandlers, setting, setSetting,
+  registerCommands, registerToolbar, setSidebarToggleHandler, setTabHandler, setToolbarHandlers, setting, setSetting,
   type CommandSpec, type ToolbarSpec, type ToolbarTab,
 } from "./bridge.ts";
 
@@ -46,10 +46,14 @@ export function useStream(initial = ""): { text: string; append(delta: string): 
   };
 }
 
-/** The sidebar's visibility for this window; pass the toggle to a native sidebar toolbar item. */
+/** The sidebar's visibility for this app: the toolbar item and the host's ⌃⌘S menu share this toggle.
+ *  The choice is stored with the app's settings so reopening a window keeps it. */
 export function useSidebar(initial = true): [boolean, () => void] {
-  const [visible, setVisible] = useState(initial);
-  const toggle = useCallback(() => setVisible((value) => !value), []);
+  const [visible, setVisible] = usePersisted("sidebarVisible", initial);
+  const latest = useRef(visible);
+  latest.current = visible;
+  const toggle = useCallback(() => setVisible(!latest.current), [setVisible]);
+  useEffect(() => setSidebarToggleHandler(toggle), [toggle]);
   return [visible, toggle];
 }
 

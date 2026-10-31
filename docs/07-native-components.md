@@ -24,7 +24,7 @@
 | `Sidebar` / `Content` / `Detail` | 同上 | 内容列；列本身没有标题/工具栏 | 只放 children |
 | `useToolbar` | `ui/src/hooks.ts` | 声明本窗口原生 toolbar；host 回传动作/搜索 | `useToolbar(spec, handlers, onSearch?)` |
 | `useTabs` | 同上 | 声明原生设置分类标签并接收选中 id；`<Settings>` 内部使用 | `useTabs(tabs, onSelect)` |
-| `useSidebar` | 同上 | 侧栏可见状态和切换函数 | `const [visible, toggle] = useSidebar()` |
+| `useSidebar` | 同上 | 侧栏可见状态 + 切换；持久化到 app 设置，响应 ⌃⌘S | `const [visible, toggle] = useSidebar()` |
 | `useCommands` | 同上 | 注册原生菜单栏命令（文件/显示） | `useCommands([{ id, menu, title, shortcut, run }])` |
 | `Icon` | `ui/src/components.tsx` | SF Symbol 模板图，宿主生成 PNG，页面用 CSS mask 着色 | `<Icon symbol="plus" />` |
 | `ContextMenu` | 同上 | 右击包住的内容时，由宿主弹原生 `NSMenu` | `<ContextMenu items={[{ id, title, disabled?, destructive?, onAction }]}>` |
@@ -157,7 +157,7 @@ toolbar.apply(spec)                  // 收到 {type:"toolbar", spec} 后调用
 
 `MenuBarController` 固定提供 app / 文件 / 编辑 / 显示 / 窗口 / 帮助骨架；app 只能通过 `useCommands` 往文件/显示里加项。
 
-当前已知缺口：显示菜单的“显示/隐藏侧栏 ⌃⌘S”使用 `NSSplitViewController.toggleSidebar(_:)` 标准 selector，但本实现侧栏是 Web 列、不是 `NSSplitViewController`，所以这个菜单项目前不会切换侧栏；可用的是原生 toolbar 的 `sidebar` item。迁移到原生 split view 时再把两者接上。
+显示菜单的“显示/隐藏侧栏 ⌃⌘S”使用宿主自定义 action：`AppSession.toggleSidebar()` 发 `sidebarToggle`，页面用 `useSidebar` 的同一个 toggle 处理。它和 toolbar 的 `sidebar` item 共用页面 handler，见第 5 节。
 
 ### 3.4 设置、启动器、设计令牌
 
@@ -183,7 +183,9 @@ toolbar.apply(spec)                  // 收到 {type:"toolbar", spec} 后调用
 | `NSToolbar` / `NSToolbarItem` | `NativeToolbarController` | 原生 |
 | toolbar 按钮 / 菜单 / 搜索 | `NSToolbarItem` / `NSMenuToolbarItem` / `NSSearchToolbarItem` | 原生 |
 | 侧栏折叠按钮 | `NSToolbarItem` + `sidebar.left` | 原生 |
-| 侧栏列的显示/收起布局 | `Window sidebar` + Web CSS | Web（按钮原生） |
+| 侧栏列的显示/收起布局 | `Window sidebar` + CSS 宽度/透明度过渡 | Web（toolbar 按钮原生） |
+| 侧栏折叠状态 | app 设置 `sidebarVisible` | Web 调用宿主设置通道 |
+| 显示菜单 ⌃⌘S | 原生菜单项 → `sidebarToggle` → `useSidebar` | 原生菜单 + Web 布局 |
 | 菜单栏、状态栏 | `MenuBarController` / `StatusItemController` | 原生 |
 | 壳设置窗口、浮窗启动器 | SwiftUI + `NSTabViewController` | 原生 |
 | app 设置窗口标题栏 | 原生标题栏 | 原生 |
@@ -196,26 +198,51 @@ toolbar.apply(spec)                  // 收到 {type:"toolbar", spec} 后调用
 | 页内 `Menu` 下拉 | Web popover | Web |
 | Composer 发送/加号/模型菜单 | Web | Web |
 
-## 5. 为什么侧栏不用原生 `NSSplitView`
+## 5. 原生侧栏 / NSSplitView：设计评估与结论
 
-结论：Phase 1 不做，当前用“原生按钮 + Web 列开关”是刻意的取舍。
+2026-10-31 阶段 3 先做设计，结论：**继续单 WebView，选 C**；不引入 `NSSplitView` 或第二个 `WKWebView`。窗口仍由 `WindowFactory` 创建，侧栏布局仍是一份 Web CSS。
 
-原因：
+### 5.1 三个选项
 
-1. **一个窗口只有一个 WKWebView**。`NSSplitView` 拆分的是原生 subview，不能拆分一个 WebView 里的 DOM。把侧栏放进 `NSSplitViewController` 只有两条路：
-   - 侧栏改成原生 AppKit 视图（例如 `NSOutlineView`）：需要为所有 app 设计通用的原生侧栏数据模型（行、分组、选中、右键菜单、搜索），这已经是内容控件原生化的 C 方向，不是 Phase 1 的窗口 chrome。
-   - 侧栏再放一个 WKWebView：每个窗口两个 WebContent 进程，行高/滚动/选中/搜索状态要在两个页面间同步，内存和桥复杂度都上去；与“每个窗口一个页面、内容区在 Web”的现有架构冲突。
-2. **一个布局真相**。现在列宽、滚动、背景、titlebar inset 都由同一份 CSS 管；再叠一个 `NSSplitView` 会出现“原生分割 + Web flex”两个布局源，窗口 resize、折叠、材质边界都容易对不齐。
-3. **Phase 1 的边界**。侧栏折叠是窗口级按钮 + 内容列状态，不是系统能力；按钮已经原生，布局在 Web 是最小改动。系统 app 的侧栏材质/拖动分隔线属于原生 split 的收益，但代价是上面的架构变化。
-4. **当前实现的代价**（已接受）：没有滑入/滑出动画；折叠状态不持久化；没有原生分隔线拖动；显示菜单的 ⌃⌘S 还没接到 Web 侧栏。
+| | A. 原生侧栏 + Web 详情 | B. 侧栏再放一个 WKWebView | C. 单 WebView + 补折叠体验 |
+|---|---|---|---|
+| 每窗口 WebContent | 1 个（详情） | 2 个 | 1 个 |
+| 内存 | 原生 `NSOutlineView` 很轻，详情 WebView 不变 | 空侧栏页约 +24 MB；长列表可到 +90 MB（01 §2） | 不变 |
+| 布局真相 | 原生 split + Web 详情，两套 | 原生 split + 两个 Web 页 | 一套 Web CSS |
+| 桥 / 同步 | 新侧栏协议；选中、搜索、右键、行内改名都要跨桥 | 两个 JS 上下文；选中/搜索/滚动/数据要在两页同步 | 无新数据协议；只加一条 `sidebarToggle` |
+| 通用数据模型 | 要覆盖分组、行、图标、计数、选中、右键、搜索、空状态、tiles/卡片 | 同 A，且两页各存一份状态 | 不需要 |
+| per-app Swift | 模型足够通用就不需要；但覆盖不了时会被迫写 | 同样有该风险 | 不需要 |
+| 原生收益 | 分隔线拖动、折叠动画、材质边界、原生行 | 同 A | 只有折叠动画/持久化/菜单快捷键 |
 
-什么时候再上 `NSSplitView`：
+A 的通用模型草案（仅示意）：
 
-- 侧栏内容确定用原生 AppKit 列表（或能接受每窗口两个 WKWebView）；
-- 需要原生拖动分隔线、折叠动画、按窗口持久化；
-- 有通用侧栏数据协议，能覆盖所有 app，而不是给某个 app 写 Swift。
+```text
+SidebarSpec { sections: [{ id, title, rows: [
+  { id, title, subtitle?, symbol?, badge?, selected, menu?, search? }
+]}]}
+```
 
-届时的迁移路径：`NSSplitViewController` + 原生侧栏视图/第二个 WebView → toolbar 的 `sidebar` item 改绑 `toggleSidebar(_:)` → 显示菜单命令复用同一 action → 删除 `Window sidebar` 的 CSS 开关。不要只在外层套一个 `NSSplitView` 而内容仍是一个整页 WebView。
+它覆盖不了示例的 `SidebarTiles` 两列卡片、Agent 的分组搜索和行内改名；要覆盖就得继续加 `tile` / `editing` / `filter` 等原生行类型，这已经是内容控件原生化的 C 方向，需要单独决策。
+
+### 5.2 为什么不做 A/B
+
+1. **A 是内容控件迁移，不是窗口 chrome**。侧栏行、分组、搜索、右键、行内改名目前都由 app 的 TS 组合；改成原生列表就得定义一套覆盖所有 app 的通用模型，或者给每个 app 写 Swift，后者违反“不做 per-app Swift”。
+2. **A 会制造两个布局真相**。原生 split 负责侧栏宽度/分隔线，Web 负责详情内部的列宽、滚动、`--titlebar` inset；窗口 resize、折叠、材质边界都要两边对齐。当前一个 CSS 就能保证。
+3. **B 与单 WebView 架构冲突**。每个窗口多一个 WebContent 进程，空页约 24 MB，长列表更高；还要在两个页面间同步选中对话、搜索词、新建/删除、右键菜单和滚动位置，收益只是原生分隔线和折叠动画。
+4. **C 已覆盖本阶段真正缺的东西**：折叠动画、持久化、⌃⌘S 菜单。它们不需要拆窗口。
+
+### 5.3 C 的实现（本阶段）
+
+- **折叠动画**：`Window sidebar` 只切 class；侧栏宽度/透明度做 200ms 过渡，`overflow: hidden`，隐藏后用 `visibility: hidden` 让内容不可聚焦；`prefers-reduced-motion` 时关闭过渡。没有 `display:none`，详情列平滑重排。
+- **持久化**：`useSidebar` 用 app 设置里的 `sidebarVisible` 保存开关，重开窗口保持；仍是 per-app，不是 per-window。
+- **⌃⌘S**：宿主“显示”菜单的项改为自定义 action，调 `AppSession.toggleSidebar()`，经 `{type:"sidebarToggle"}` 到页面；`useSidebar` 用同一个 `toggle` 处理，和 toolbar 的 `sidebar` item 完全共用。设置窗口没有主页面时不发。
+- 不新增 `NSSplitView`，不改 `WindowFactory`，不写 per-app Swift，内存不变。
+
+### 5.4 已知限制与重评条件
+
+限制：没有原生分隔线拖动；侧栏材质边界仍由 Web 层叠决定；折叠状态是 app 级而非窗口级；侧栏内容仍是 Web。
+
+重评条件：侧栏内容确定要改成原生列表（或能接受每窗口两个 WebView），并且需要原生拖动/折叠/材质；届时的路径是 `NSSplitViewController` + 原生侧栏视图/第二个 WebView → toolbar 的 `sidebar` item 改绑 `toggleSidebar(_:)` → 显示菜单复用同一 action → 删除 `Window sidebar` 的 CSS 开关。**不要只在外层套一个 `NSSplitView` 而内容仍是一个整页 WebView。**
 
 ## 6. 后续开发：仍是 Web 的部分
 

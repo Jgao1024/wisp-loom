@@ -20,7 +20,7 @@
 └──────────┴──────────────────────────────────────────────┘
 ```
 
-- `Window columns={2}`：侧栏 + 详情。窗口是 `.fullSizeContentView`，WebView 铺满整个窗口，背后是 `NSVisualEffectView(.sidebar)`；侧栏列不画背景，所以显示系统侧栏材质，内容列和详情列是不透明的 `Canvas`，一直铺到窗口顶，原生 toolbar 透明地盖在上面。侧栏折叠时 `Window sidebar={false}` 给根节点加 `sidebar-hidden`，列直接移出布局，详情占满。
+- `Window columns={2}`：侧栏 + 详情。窗口是 `.fullSizeContentView`，WebView 铺满整个窗口，背后是 `NSVisualEffectView(.sidebar)`；侧栏列不画背景，所以显示系统侧栏材质，内容列和详情列是不透明的 `Canvas`，一直铺到窗口顶，原生 toolbar 透明地盖在上面。侧栏折叠时 `Window sidebar={false}` 给根节点加 `sidebar-hidden`，侧栏宽度/透明度过渡到 0，详情占满；折叠状态存在 app 设置里，toolbar 按钮和显示菜单 ⌃⌘S 共用同一个 toggle。
 - 窗口标题/副标题由 `Window title/subtitle` 设置，显示在原生 toolbar 里；页面不再有列标题条。
 - 工具栏用 `useToolbar(spec, handlers, onSearch?)` 声明；按钮、菜单、搜索、侧栏折叠都是原生控件。红绿灯、拖动、双击缩放全由宿主处理。侧栏折叠按钮是 `{ id, sidebar: true }` item，点击后页面用 `useSidebar` 切换 `Window sidebar`。
 

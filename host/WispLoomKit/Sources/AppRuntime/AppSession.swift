@@ -49,6 +49,11 @@ public final class AppSession {
 
     public func restartBackend() { backend?.restartAfterRequests() }
 
+    /// View ▸ Toggle Sidebar: the page runs the same toggle as its native toolbar item.
+    public func toggleSidebar() {
+        for link in links where link.kind == .main { link.push(["type": .string("sidebarToggle")]) }
+    }
+
     /// Tells a window's page that a menu command fired.
     public func fire(command: String) {
         for link in links.suffix(1) { link.push(["type": .string("command"), "id": .string(command)]) }

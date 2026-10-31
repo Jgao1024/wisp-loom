@@ -24,16 +24,18 @@ public struct MenuModel {
     public var appName: String
     public var commands: [MenuCommand]
     public var openSettings: (@MainActor () -> Void)?
+    public var toggleSidebar: (@MainActor () -> Void)?
     public var quit: @MainActor () -> Void
     public var language: Language
 
     public init(
         appName: String, commands: [MenuCommand], openSettings: (@MainActor () -> Void)?,
-        quit: @escaping @MainActor () -> Void, language: Language
+        toggleSidebar: (@MainActor () -> Void)? = nil, quit: @escaping @MainActor () -> Void, language: Language
     ) {
         self.appName = appName
         self.commands = commands
         self.openSettings = openSettings
+        self.toggleSidebar = toggleSidebar
         self.quit = quit
         self.language = language
     }
@@ -90,7 +92,14 @@ public final class MenuBarController: NSObject {
         add(edit, to: main, title: t("Edit"))
 
         let view = NSMenu(title: t("View"))
-        item(view, t("Toggle Sidebar"), #selector(NSSplitViewController.toggleSidebar(_:)), "s", [.command, .control])
+        if let toggleSidebar = model.toggleSidebar {
+            // The page's sidebar is a Web column; the host hands ⌃⌘S to the same toggle its toolbar item uses.
+            custom(view, t("Toggle Sidebar"), shortcut: Shortcut("cmd+ctrl+s"), enabled: true, action: toggleSidebar)
+        } else {
+            item(
+                view, t("Toggle Sidebar"), #selector(NSSplitViewController.toggleSidebar(_:)), "s",
+                [.command, .control])
+        }
         commands(model, "view", into: view)
         view.addItem(.separator())
         item(view, t("Enter Full Screen"), #selector(NSWindow.toggleFullScreen(_:)), "f", [.command, .control])

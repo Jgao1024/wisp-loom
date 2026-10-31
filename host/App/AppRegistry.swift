@@ -53,6 +53,8 @@ final class AppRegistry {
 
     func fire(_ command: String, in id: AppID) { sessions[id]?.fire(command: command) }
 
+    func toggleSidebar(in id: AppID) { sessions[id]?.toggleSidebar() }
+
     private func session(for id: AppID) -> AppSession? {
         if let existing = sessions[id] { return existing }
         guard let bundle = bundles.first(where: { $0.manifest.id == id }) else { return nil }

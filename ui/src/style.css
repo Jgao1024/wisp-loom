@@ -27,11 +27,14 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .window { display: flex; flex: 1; min-height: 0; }
 .column { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .window.native .column { padding-top: var(--titlebar); }
-.column.sidebar { width: var(--column-sidebar); flex: none; }
+.column.sidebar { width: var(--column-sidebar); flex: none; overflow: hidden;
+  transition: width .2s ease, opacity .2s ease, visibility 0s; }
 .column.content { width: var(--column-content); flex: none; background: Canvas; border-inline: 1px solid var(--separator); }
 .column.detail { flex: 1; background: Canvas; }
 .window.two .column.content { display: none; }
-.window.sidebar-hidden .column.sidebar { display: none; }
+.window.sidebar-hidden .column.sidebar { width: 0; opacity: 0; visibility: hidden;
+  transition: width .2s ease, opacity .15s ease, visibility 0s linear .2s; }
+@media (prefers-reduced-motion: reduce) { .column.sidebar { transition: none; } }
 .scroll { flex: 1; min-height: 0; overflow: auto; }
 .pad { padding: var(--space-l) var(--space-xl); }
 

@@ -165,7 +165,7 @@ useToolbar(
 - 列的背景仍然铺到顶部：侧栏透明，露出 `NSVisualEffectView(.sidebar)`；内容/详情 `Canvas` 一直画到窗口顶，所以 toolbar 后面的左右底色和系统 app 一致。
 - 原生 toolbar 负责拖动、双击缩放、标题/副标题、按钮 hover/按下/焦点、菜单跟踪、搜索框焦点。
 - 页面里不要再放任何“标题条/工具栏”组件或拖拽逻辑。`ToolbarGroup` 删除；`Search` 只用于内容区（例如 Agent 侧栏搜索）。
-- 侧栏折叠只切 `Window sidebar` 的 class：`display:none` 移出侧栏列，内容/详情自动重排；Phase 1 不做宽度动画。
+- 侧栏折叠只切 `Window sidebar` 的 class：侧栏宽度/透明度过渡到 0，内容/详情自动重排；隐藏后用 `visibility: hidden` 让内容不可聚焦。显示菜单的 ⌃⌘S 和 toolbar 的 `sidebar` item 共用 `useSidebar` 的 toggle。
 - 内容列不再有 `title/subtitle/toolbar`。窗口级标题统一用：
 
 ```tsx

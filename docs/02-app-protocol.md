@@ -57,6 +57,7 @@
 | `toolbarSearch` | `text` | 原生搜索框文本变化 |
 | `tabSelected` | `id` | 原生设置分类标签被选中 |
 | `contextMenuAction` | `id` | 原生右键菜单项被选中 |
+| `sidebarToggle` | | 菜单栏“显示/隐藏侧栏 ⌃⌘S”触发，页面用 `useSidebar` 的同一个 toggle |
 | `settingChanged` | `key` `value` | 其他窗口改了设置 |
 
 启动参数：`window.__wisp_boot = {appID, lang, title, hasBackend, window}`，在任何脚本之前注入。

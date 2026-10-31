@@ -208,6 +208,22 @@ struct AppSessionTests {
         #expect(!session.isRunning)
     }
 
+    @Test func sidebarToggleReachesMainWindowsOnly() async throws {
+        let box = try Sandbox()
+        defer { box.remove() }
+        let session = try session(box, backend: false)
+        let main = Page(session)
+        let settings = Page(session, kind: .settings)
+        defer {
+            main.connection.close()
+            settings.connection.close()
+        }
+        session.toggleSidebar()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(main.messages.contains { $0["type"]?.stringValue == "sidebarToggle" })
+        #expect(!settings.messages.contains { $0["type"]?.stringValue == "sidebarToggle" })
+    }
+
     @Test func windowRequestsAreForwarded() throws {
         let box = try Sandbox()
         defer { box.remove() }

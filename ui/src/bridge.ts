@@ -23,7 +23,8 @@ type Incoming =
   | { type: "toolbarAction"; id: string }
   | { type: "toolbarSearch"; text: string }
   | { type: "tabSelected"; id: string }
-  | { type: "contextMenuAction"; id: string };
+  | { type: "contextMenuAction"; id: string }
+  | { type: "sidebarToggle" };
 
 export const boot: Boot = window.__wisp_boot ?? { appID: "dev", lang: "en", title: "", hasBackend: false, window: "main" };
 
@@ -43,6 +44,7 @@ let toolbarActions: ((id: string) => void) | undefined;
 let toolbarSearchHandler: ((text: string) => void) | undefined;
 let tabHandler: ((id: string) => void) | undefined;
 let contextMenuHandler: ((id: string) => void) | undefined;
+let sidebarToggleHandler: (() => void) | undefined;
 let seq = 0;
 
 window.__wisp_recv = (batch) => {
@@ -67,6 +69,10 @@ window.__wisp_recv = (batch) => {
       const handler = contextMenuHandler;
       contextMenuHandler = undefined;
       handler?.(message.id);
+      continue;
+    }
+    if (message.type === "sidebarToggle") {
+      sidebarToggleHandler?.();
       continue;
     }
     const call = waiting.get(message.id);
@@ -198,6 +204,11 @@ export interface ContextMenuEntry {
   title: string;
   destructive?: boolean;
   disabled?: boolean;
+}
+
+/** The host's View ▸ Toggle Sidebar (⌃⌘S); the page runs the same toggle as its toolbar item. */
+export function setSidebarToggleHandler(handler?: () => void): void {
+  sidebarToggleHandler = handler;
 }
 
 /** Shows a native menu at the pointer; only the selected id comes back. Dismissal needs no callback. */

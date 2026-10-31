@@ -8,6 +8,7 @@ import {
   registerCommands,
   registerToolbar,
   setSecret,
+  setSidebarToggleHandler,
   setTabHandler,
   showContextMenu,
   setSetting,
@@ -113,6 +114,14 @@ test("toolbar specs are posted and native actions/search reach the latest handle
   setToolbarHandlers((id) => calls.push(`action:${id}`), (text) => calls.push(`search:${text}`));
   answer({ type: "toolbarAction", id: "new" }, { type: "toolbarSearch", text: "abc" });
   assert.deepEqual(calls, ["action:new", "search:abc"]);
+});
+
+test("the host sidebar toggle reaches the page handler", () => {
+  take();
+  let toggles = 0;
+  setSidebarToggleHandler(() => toggles++);
+  answer({ type: "sidebarToggle" }, { type: "sidebarToggle" });
+  assert.equal(toggles, 2);
 });
 
 test("context menus post semantics and return only the selected id", () => {

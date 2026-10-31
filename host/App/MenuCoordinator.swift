@@ -49,7 +49,9 @@ final class MenuCoordinator {
         var openSettings: (@MainActor () -> Void)?
         if app.hasSettings { openSettings = { [send] in send(.openAppSettings(id)) } }
         let quit: @MainActor () -> Void = { [send] in send(.closeApp(id)) }
+        let toggleSidebar: @MainActor () -> Void = { [registry] in registry.toggleSidebar(in: id) }
         return MenuModel(
-            appName: app.name, commands: commands, openSettings: openSettings, quit: quit, language: language)
+            appName: app.name, commands: commands, openSettings: openSettings, toggleSidebar: toggleSidebar,
+            quit: quit, language: language)
     }
 }
