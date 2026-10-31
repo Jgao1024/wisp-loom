@@ -155,4 +155,3 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .sidebar-search .search { max-width: none; }
 .rename { margin: 1px 0; padding: 6px var(--space-s); border: 0; border-radius: var(--radius-control); background: var(--fill); outline: 2px solid var(--accent); font: inherit; -webkit-user-select: text; user-select: text; }
 .context { display: block; }
-.menu-pop.context-pop { position: fixed; top: auto; inset-inline-end: auto; margin-top: 0; }

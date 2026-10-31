@@ -9,6 +9,7 @@ import {
   registerToolbar,
   setSecret,
   setTabHandler,
+  showContextMenu,
   setSetting,
   setToolbarHandlers,
   setting,
@@ -112,6 +113,28 @@ test("toolbar specs are posted and native actions/search reach the latest handle
   setToolbarHandlers((id) => calls.push(`action:${id}`), (text) => calls.push(`search:${text}`));
   answer({ type: "toolbarAction", id: "new" }, { type: "toolbarSearch", text: "abc" });
   assert.deepEqual(calls, ["action:new", "search:abc"]);
+});
+
+test("context menus post semantics and return only the selected id", () => {
+  take();
+  const ran: string[] = [];
+  showContextMenu(
+    [
+      { id: "rename", title: "Rename" },
+      { id: "delete", title: "Delete", destructive: true, disabled: true },
+    ],
+    (id) => ran.push(id),
+  );
+  assert.deepEqual(take(), [{
+    type: "contextMenu",
+    items: [
+      { id: "rename", title: "Rename" },
+      { id: "delete", title: "Delete", destructive: true, disabled: true },
+    ],
+  }]);
+  answer({ type: "contextMenuAction", id: "rename" });
+  answer({ type: "contextMenuAction", id: "delete" });
+  assert.deepEqual(ran, ["rename"]);
 });
 
 test("settings tabs are posted and the selected pane comes back by id", () => {

@@ -43,6 +43,7 @@
 | `setting` / `setSetting` | `id` `key` / `key` `value` | 读写 app 设置（UserDefaults，按 app id 隔离）；写入后广播给同 app 的其他窗口 |
 | `commands` | `commands[]` | 注册菜单栏命令 `{id, menu, title, shortcut?, disabled?}` |
 | `toolbar` | `spec` | 设置/更新本窗口的原生 toolbar（含设置分类 `tabs`）；结构见 `docs/06-native-toolbar.md` |
+| `contextMenu` | `items[]` | 请求宿主在鼠标位置弹出原生右键菜单 |
 | `title` / `height` | | 窗口标题/副标题、设置窗口高度（原生 toolbar 显示标题） |
 | `openSettings` / `log` | | 打开 app 设置窗口、写宿主日志 |
 
@@ -55,6 +56,7 @@
 | `toolbarAction` | `id` | 原生 toolbar 按钮/菜单项被点击 |
 | `toolbarSearch` | `text` | 原生搜索框文本变化 |
 | `tabSelected` | `id` | 原生设置分类标签被选中 |
+| `contextMenuAction` | `id` | 原生右键菜单项被选中 |
 | `settingChanged` | `key` `value` | 其他窗口改了设置 |
 
 启动参数：`window.__wisp_boot = {appID, lang, title, hasBackend, window}`，在任何脚本之前注入。

@@ -134,6 +134,7 @@ public final class AppSession {
             case "title":
                 onWindow?(.title(message["title"]?.stringValue ?? "", subtitle: message["subtitle"]?.stringValue))
             case "toolbar": applyToolbar(message)
+            case "contextMenu": applyContextMenu(message)
             case "height": message["value"]?.numberValue.map { onWindow?(.contentHeight($0)) }
             case "setting": answerSetting(message)
             case "setSetting": storeSetting(message)
@@ -219,6 +220,13 @@ public final class AppSession {
                 let commands = try? JSONDecoder().decode([AppCommand].self, from: data)
             else { return }
             session.setCommands(commands)
+        }
+
+        private func applyContextMenu(_ message: [String: JSONValue]) {
+            guard let value = message["items"], let data = try? JSONEncoder().encode(value),
+                let items = try? JSONDecoder().decode([ToolbarMenuItem].self, from: data), !items.isEmpty
+            else { return }
+            onWindow?(.contextMenu(items))
         }
 
         private func applyToolbar(_ message: [String: JSONValue]) {

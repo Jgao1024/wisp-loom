@@ -222,8 +222,8 @@ function Agent() {
                   <ContextMenu
                     key={conversation.id}
                     items={[
-                      { title: "重命名", onAction: () => startRename(conversation) },
-                      { title: "删除", destructive: true, onAction: () => removeConversation(conversation.id) },
+                      { id: `${conversation.id}.rename`, title: "重命名", onAction: () => startRename(conversation) },
+                      { id: `${conversation.id}.delete`, title: "删除", destructive: true, onAction: () => removeConversation(conversation.id) },
                     ]}
                   >
                     {renamingId === conversation.id ? (

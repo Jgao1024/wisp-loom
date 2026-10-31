@@ -20,7 +20,8 @@
 | 壳设置窗口、浮窗启动器 | SwiftUI | 是 |
 | 侧栏行、内容列表、详情 | WKWebView + 设计系统 | 否 |
 | 消息、Markdown、Composer | WKWebView + 设计系统 | 否 |
-| app 内 `Menu` / `ContextMenu` 弹出菜单 | HTML popover（ContextMenu Phase 2 再迁原生） | 否 |
+| app 内 `ContextMenu` 右键菜单 | `NSMenu` + 共享菜单工厂 | 是 |
+| app 内 `Menu` 下拉菜单 | HTML popover（暂不迁） | 否 |
 | 设置表单控件（开关/下拉/输入框） | Web（不属本阶段） | 否 |
 
 规则：
@@ -54,7 +55,7 @@ app TS
 | 标题/副标题 | `window.title/subtitle` | `title` `subtitle` |
 | 动作回传、handler 注册 | 桥 + `useToolbar` | `id → function` |
 | 设置标签栏 | 同一 controller 的 tab item + `selectedItemIdentifier` | pane 列表（id/title/symbol） |
-| 原生右键菜单（Phase 2） | 复用同一 menu 模型 | items |
+| 原生右键菜单 | `NativeContextMenu` + 同一 menu 模型 | items（id/title/destructive/disabled） |
 
 新增一种原生控件（例如 segmented group、toggle）时：**在宿主和 SDK 各加一次**，所有 app 立刻可用；app 不能自己发明原生控件。Phase 1 做 button / menu / search / 侧栏折叠四种，group、toggle 等真实 app 用到再加，避免过度设计。
 
@@ -141,6 +142,7 @@ useToolbar(
 | `type` | 字段 | 说明 |
 |---|---|---|
 | `toolbar` | `spec` | 设置/更新本窗口的原生 toolbar；`spec` 结构见上 |
+| `contextMenu` | `items[]` | 在鼠标位置弹出原生 `NSMenu`；每项 `{id,title,destructive?,disabled?}` |
 
 宿主 → 页面（新增两行）：
 
@@ -149,6 +151,7 @@ useToolbar(
 | `toolbarAction` | `id` | toolbar 按钮/菜单项被点击 |
 | `toolbarSearch` | `text` | 原生搜索框文本变化 |
 | `tabSelected` | `id` | 原生设置分类标签被选中 |
+| `contextMenuAction` | `id` | 原生右键菜单项被选中；只回传 id |
 
 - 仍用 `{type:"title", title, subtitle}` 更新窗口标题/副标题，由原生 toolbar 显示；页面不再绘制标题。
 - 动作和搜索走现有 `window.__wisp_recv` 批量通道，不新增 WebKit handler。
@@ -186,7 +189,7 @@ useToolbar(
 ## 7. 阶段
 
 - **Phase 1（已完成）**：主窗口原生 toolbar + 标题/副标题 + 按钮/菜单/搜索/侧栏折叠；示例与 Agent 迁移；删除页面标题条。
-- **Phase 2（进行中）**：设置窗口分类标签栏已改原生（同一 item 工厂 + `tabs` + `tabSelected`）；页内 `ContextMenu` 改原生 `NSMenu`（复用同一 menu 模型）。
+- **Phase 2（已完成）**：设置窗口分类标签栏已改原生（同一 item 工厂 + `tabs` + `tabSelected`）；页内 `ContextMenu` 已改原生 `NSMenu`（共享 `NativeMenuFactory` + `contextMenuAction`）。页内 `Menu` 下拉仍留 Web。
 - **不在 B 范围**：Composer、列表、Markdown、侧栏搜索等内容的原生控件。要做这些是 C 方向，需要另一次决策。
 
 ## 8. 验收
@@ -222,3 +225,10 @@ useToolbar(
 - `[Swift]` `NativeToolbarController` 为每个 tab 生成一个 `NSToolbarItem`（SF Symbol + 标题），`toolbarSelectableItemIdentifiers` 让 AppKit 画选中高亮；点击回传 `tabSelected`。设置窗口用 `.preference` toolbar style：原生标题栏一行、标签栏一行、内容在其下。
 - `[TS]` `useTabs` 发送 `{tabs}` 并接收 `tabSelected`；`Settings` 内部使用它，app 仍只声明 `<Pane>` 列表，不写 tab 代码。
 - 设置窗口继续用 `height` 做内容高度动画；Web 标签删除后只上报 pane 内容高度。
+
+### Phase 2 · 原生右键菜单
+
+- `[Swift]` `ShellUI/Menu/NativeMenuFactory.swift`：toolbar 菜单和右键菜单共用的 `NSMenu` 工厂；每项 `representedObject` 存页面 id，`destructive` 用系统红色，`disabled` 映射 `isEnabled`。
+- `[Swift]` `ShellUI/Menu/NativeContextMenu.swift`：在 `NSEvent.mouseLocation` 弹出 `NSMenu`；追踪、Escape、点击外部、深色模式都由 AppKit 处理。
+- `[Swift]` `WindowRequest.contextMenu([ToolbarMenuItem])`：`AppSession` 解码 `{type:"contextMenu", items}`，`AppPageController` 弹出菜单并回传 `contextMenuAction`。
+- `[TS]` `showContextMenu(items, onSelect)` 与 `ContextMenu` 组件：页面只发 id/title/destructive/disabled，不再画 popover；菜单项 id 在页面内唯一。

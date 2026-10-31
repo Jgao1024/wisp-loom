@@ -22,7 +22,8 @@ type Incoming =
   | { type: "command"; id: string }
   | { type: "toolbarAction"; id: string }
   | { type: "toolbarSearch"; text: string }
-  | { type: "tabSelected"; id: string };
+  | { type: "tabSelected"; id: string }
+  | { type: "contextMenuAction"; id: string };
 
 export const boot: Boot = window.__wisp_boot ?? { appID: "dev", lang: "en", title: "", hasBackend: false, window: "main" };
 
@@ -41,6 +42,7 @@ const commandHandlers = new Map<string, () => void>();
 let toolbarActions: ((id: string) => void) | undefined;
 let toolbarSearchHandler: ((text: string) => void) | undefined;
 let tabHandler: ((id: string) => void) | undefined;
+let contextMenuHandler: ((id: string) => void) | undefined;
 let seq = 0;
 
 window.__wisp_recv = (batch) => {
@@ -59,6 +61,12 @@ window.__wisp_recv = (batch) => {
     }
     if (message.type === "tabSelected") {
       tabHandler?.(message.id);
+      continue;
+    }
+    if (message.type === "contextMenuAction") {
+      const handler = contextMenuHandler;
+      contextMenuHandler = undefined;
+      handler?.(message.id);
       continue;
     }
     const call = waiting.get(message.id);
@@ -183,4 +191,17 @@ export function setToolbarHandlers(action: (id: string) => void, search?: (text:
 /** The selected native toolbar tab; the page switches its pane and sends the new `selected` flag. */
 export function setTabHandler(handler: (id: string) => void): void {
   tabHandler = handler;
+}
+
+export interface ContextMenuEntry {
+  id: string;
+  title: string;
+  destructive?: boolean;
+  disabled?: boolean;
+}
+
+/** Shows a native menu at the pointer; only the selected id comes back. Dismissal needs no callback. */
+export function showContextMenu(items: ContextMenuEntry[], onSelect: (id: string) => void): void {
+  contextMenuHandler = onSelect;
+  post({ type: "contextMenu", items });
 }

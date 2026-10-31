@@ -7,6 +7,8 @@ public enum WindowRequest: Sendable, Equatable {
     case contentHeight(Double)
     /// The window's native toolbar, described by the page.
     case toolbar(ToolbarSpec)
+    /// A native menu for the page's context menu, shown at the pointer.
+    case contextMenu([ToolbarMenuItem])
 }
 
 /// One app window's link to its host session. The page speaks the backend's JSON Lines dialect over a

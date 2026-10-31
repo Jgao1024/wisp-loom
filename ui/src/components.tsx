@@ -1,6 +1,6 @@
 import { render as mount, type ComponentChildren, type VNode } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
-import { boot, openSettings, setContentHeight, setWindowTitle } from "./bridge.ts";
+import { boot, openSettings, setContentHeight, setWindowTitle, showContextMenu } from "./bridge.ts";
 import { useTabs } from "./hooks.ts";
 
 /** Components take semantics only: no colours, fonts, sizes or margins can be passed. */
@@ -121,52 +121,27 @@ export function Menu({ title, symbol, children }: { title?: string; symbol?: str
 }
 
 export interface ContextMenuItem {
+  id: string;
   title: string;
   onAction: () => void;
   destructive?: boolean;
+  disabled?: boolean;
 }
 
-/** Right-click menu at the pointer; clicking elsewhere or Escape closes it. */
+/** Right-click menu: the host shows a native NSMenu at the pointer and returns only the selected id. */
 export function ContextMenu({ items, children }: { items: ContextMenuItem[] } & Kids) {
-  const [at, setAt] = useState<{ x: number; y: number } | null>(null);
-  useEffect(() => {
-    if (!at) return;
-    const away = () => setAt(null);
-    const escape = (e: KeyboardEvent) => e.key === "Escape" && setAt(null);
-    document.addEventListener("mousedown", away);
-    document.addEventListener("keydown", escape);
-    return () => {
-      document.removeEventListener("mousedown", away);
-      document.removeEventListener("keydown", escape);
-    };
-  }, [at]);
   return (
     <div
       class="context"
       onContextMenu={(e) => {
         e.preventDefault();
-        setAt({
-          x: Math.min(e.clientX, window.innerWidth - 188),
-          y: Math.min(e.clientY, window.innerHeight - items.length * 30 - 16),
-        });
+        showContextMenu(
+          items.map(({ id, title, destructive, disabled }) => ({ id, title, destructive, disabled })),
+          (id) => items.find((item) => item.id === id)?.onAction(),
+        );
       }}
     >
       {children}
-      {at && (
-        <div class="menu-pop context-pop" style={{ left: `${at.x}px`, top: `${at.y}px` }} onMouseDown={(e) => e.stopPropagation()}>
-          {items.map((item) => (
-            <Button
-              key={item.title}
-              title={item.title}
-              role={item.destructive ? "destructive" : undefined}
-              onAction={() => {
-                setAt(null);
-                item.onAction();
-              }}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import WebKit
 public final class AppPageController: NSViewController {
     public let connection: any AppConnection
     private let webView: WKWebView
+    private let contextMenu = NativeContextMenu()
     private lazy var toolbarController = NativeToolbarController(
         onAction: { [weak self] id in
             self?.connection.push(["type": .string("toolbarAction"), "id": .string(id)])
@@ -55,6 +56,10 @@ public final class AppPageController: NSViewController {
             window.setFrame(frame, display: true, animate: window.isVisible)
         case .toolbar(let spec):
             toolbarController.apply(spec)
+        case .contextMenu(let items):
+            contextMenu.show(items, at: NSEvent.mouseLocation) { [weak self] id in
+                self?.connection.push(["type": .string("contextMenuAction"), "id": .string(id)])
+            }
         }
     }
 

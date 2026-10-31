@@ -220,9 +220,17 @@ struct AppSessionTests {
         link.receive(
             #"{"type":"toolbar","spec":{"leading":[{"id":"new","symbol":"plus","help":"New"}],"trailing":[{"id":"search","search":true,"placeholder":"Search"}]}}"#
         )
+        link.receive(
+            #"{"type":"contextMenu","items":[{"id":"rename","title":"Rename"},{"id":"delete","title":"Delete","destructive":true,"disabled":true}]}"#
+        )
         let spec = ToolbarSpec(
             leading: [ToolbarItem(id: "new", symbol: "plus", help: "New")],
             trailing: [ToolbarItem(id: "search", search: true, placeholder: "Search")])
-        #expect(seen == [.title("Hi", subtitle: "There"), .contentHeight(300), .toolbar(spec)])
+        let menu = [
+            ToolbarMenuItem(id: "rename", title: "Rename"),
+            ToolbarMenuItem(id: "delete", title: "Delete", destructive: true, isEnabled: false),
+        ]
+        #expect(
+            seen == [.title("Hi", subtitle: "There"), .contentHeight(300), .toolbar(spec), .contextMenu(menu)])
     }
 }

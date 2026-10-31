@@ -100,7 +100,7 @@ run(<Main />, (
 | `Scroll` | 可滚动区域；`anchor="bottom"` 时贴底（消息流） | `anchor` |
 | `Markdown` | 消息正文：段落、标题、列表、代码块、行内代码、引用（表格后置） | `text` |
 | `Composer` | 输入区：回车发送、⇧回车换行，发送后清空；`busy` 时变停止 | `value` `placeholder` `onChange` `onSend` `busy` `onStop` `sendWith` |
-| `ContextMenu` | 右键菜单，`items` 为 `{title, onAction, destructive}` | `items` |
+| `ContextMenu` | 右键菜单，由宿主弹原生 `NSMenu`；`items` 为 `{id, title, onAction, destructive?, disabled?}` | `items` |
 | `useCommands` | 菜单栏命令（hook，不是组件） | `{id, menu, title, shortcut, run}` |
 
 新增组件的流程：先在这张表加一行 → `ui/src/components.tsx` 和 `ui/src/style.css` → 示例或测试用到。没有 app 用到的组件不加；内容组件不需要改 Swift，新增原生控件类型才改宿主一次。`Sheet` `Popover` `ListDetail` 等随后续 Agent 阶段加入。

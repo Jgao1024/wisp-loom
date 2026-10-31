@@ -27,6 +27,7 @@
 | `useSidebar` | 同上 | 侧栏可见状态和切换函数 | `const [visible, toggle] = useSidebar()` |
 | `useCommands` | 同上 | 注册原生菜单栏命令（文件/显示） | `useCommands([{ id, menu, title, shortcut, run }])` |
 | `Icon` | `ui/src/components.tsx` | SF Symbol 模板图，宿主生成 PNG，页面用 CSS mask 着色 | `<Icon symbol="plus" />` |
+| `ContextMenu` | 同上 | 右击包住的内容时，由宿主弹原生 `NSMenu` | `<ContextMenu items={[{ id, title, disabled?, destructive?, onAction }]}>` |
 | `setContentHeight` | `ui/src/bridge.ts` | 设置窗口按内容高度做原生动画（设置窗口） | `setContentHeight(px)` |
 | `openSettings` | `ui/src/bridge.ts` | 打开本 app 的设置窗口 | `openSettings()` |
 
@@ -191,7 +192,8 @@ toolbar.apply(spec)                  // 收到 {type:"toolbar", spec} 后调用
 | 侧栏行/列表、内容列表、详情 | WKWebView + 设计系统 | Web |
 | 消息、Markdown、Composer | WKWebView | Web |
 | Agent 侧栏搜索 | Web `Search` | Web |
-| 页内 `Menu` / `ContextMenu` | Web popover | Web（ContextMenu Phase 2） |
+| 页内 `ContextMenu` | 宿主 `NSMenu`（共享 `NativeMenuFactory`） | 原生 |
+| 页内 `Menu` 下拉 | Web popover | Web |
 | Composer 发送/加号/模型菜单 | Web | Web |
 
 ## 5. 为什么侧栏不用原生 `NSSplitView`
@@ -220,7 +222,7 @@ toolbar.apply(spec)                  // 收到 {type:"toolbar", spec} 后调用
 ### Phase 2
 
 1. **设置窗口分类标签栏（已完成）**：`<Settings>` 的 Web `.tabs` 已改为原生 toolbar tab；新增 `ToolbarSpec.tabs`、`useTabs` 和 `tabSelected` 回传。设置表单仍留在 Web。
-2. **页内 `ContextMenu`（进行中）**：右击时页面把 `{items:[{id,title,destructive,disabled}]}` 发给宿主，宿主用 `NSMenu` 在鼠标位置弹出，选中回传 id。`Menu` 下拉可以稍后再迁。
+2. **页内 `ContextMenu`（已完成）**：右击时页面把 `{items:[{id,title,destructive,disabled}]}` 发给宿主，宿主用 `NSMenu` 在鼠标位置弹出，选中回传 `contextMenuAction`。Escape/点击外部/深色模式由 AppKit 处理；`Menu` 下拉仍留 Web。
 
 ### 后续 C 方向（需要先决策）
 

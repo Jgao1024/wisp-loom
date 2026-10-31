@@ -26,7 +26,7 @@
 | 区域 | 内容 | 实现 |
 |---|---|---|
 | 窗口 toolbar | 左：侧栏折叠、新建对话；中间：窗口标题（当前对话）/ 副标题（Agent · Model）；右：`⋯` 菜单（重命名、复制为 Markdown、删除）、Agent 选择、分享 | `[Swift]` 原生 `NSToolbar`，页面用 `useToolbar` 声明；侧栏状态用 `useSidebar`；见 06 |
-| 侧栏 | 搜索；对话列表按今天 / 昨天分组；右键：重命名、删除；不再放“新建对话”行（与 toolbar 重复） | `[TS]` `Sidebar` + `Search` + `List` + `Section`；右键菜单 Phase 1 仍是 `ContextMenu` |
+| 侧栏 | 搜索；对话列表按今天 / 昨天分组；右键：重命名、删除；不再放“新建对话”行（与 toolbar 重复） | `[TS]` `Sidebar` + `Search` + `List` + `Section`；右键用 `ContextMenu`，宿主弹原生 `NSMenu` |
 | 消息区 | 流式输出；生成中可以停止；每条助手消息悬停显示拷贝、重新生成 | `[TS]` `Scroll`（`anchor="bottom"`）+ `Markdown`，文本来自 `useStream` |
 | 输入区 | 回车发送、⇧回车换行；左 `+`（附件，M3）；右模型选择（含思考强度）+ 发送/停止按钮 | `[TS]` `Composer` + `Menu` |
 | 空状态 | 新对话：显示当前 Agent 名称和简介 | `[TS]` `Empty` |

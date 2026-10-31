@@ -155,16 +155,7 @@ public final class NativeToolbarController: NSObject {
     }
 
     private func makeMenu(_ entries: [ToolbarMenuItem]) -> NSMenu {
-        let menu = NSMenu()
-        menu.autoenablesItems = false
-        for entry in entries {
-            let item = NSMenuItem(title: entry.title, action: #selector(menuItemClicked(_:)), keyEquivalent: "")
-            item.target = self
-            item.representedObject = entry.id
-            item.isEnabled = entry.isEnabled
-            menu.addItem(item)
-        }
-        return menu
+        NativeMenuFactory.make(entries, target: self, action: #selector(menuItemClicked(_:)))
     }
 
     /// One settings pane tab: a native toolbar item with an SF Symbol and its title. Selection is drawn by
