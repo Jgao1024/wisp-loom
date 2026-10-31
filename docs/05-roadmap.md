@@ -88,6 +88,7 @@ M0 的第一版是“JSContext + patch 协议 + SwiftUI 节点渲染器”（对
 
 ## 暂不做
 
+- Node 后端 / 共用 JS 后端进程：目前不做，理由和重新评估的条件见 `docs/01-architecture.md` 第 2 节“边界决定”。
 - Go：等出现需要独立打包、常驻的服务再定。
 - 插件市场、git / 远程安装：先只支持本地目录。
 - 签名与公证：拿到 Developer ID 后统一处理。
