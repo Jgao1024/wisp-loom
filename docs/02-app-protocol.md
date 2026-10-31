@@ -31,11 +31,12 @@
 | 方向 | 接口 | 用途 |
 |---|---|---|
 | TS → Swift | `__wisp.commit(json)` | 提交一批界面 patch |
-| TS → Swift | `__wisp.call(method, params, onEvent)` → Promise | 调后端或壳能力 |
+| TS → Swift | `__wisp.call(method, params, onEvent, onDone)` → 取消函数 | 调后端或壳能力；参数和结果都是 JSON 字符串，SDK 的 `call()` 把它包成 Promise + `abort()` |
 | TS → Swift | `__wisp.setting(key)` / `__wisp.setSetting(key, value)` | 读写 app 设置（壳存在 UserDefaults，按 app id 隔离） |
 | TS → Swift | `setTimeout` / `clearTimeout` / `console` | 壳实现，JSC 默认没有 |
 | Swift → TS | `__wisp.dispatch(handler, value)` | 用户交互事件 |
-| Swift → TS | `__wisp.lifecycle(kind)` | `open` / `close` / `reload`、语言变化、深浅色变化 |
+| Swift → TS | `__wisp.lifecycle(kind)` | M0 只有 `resync`：壳拒绝了某个 patch，要求 JS 重发全量 `replace`。其余（语言、深浅色）等有 app 用到再加 |
+| 壳 → TS | `__wisp.rev` | 注入的起始 rev，热重载后 JS 从这里继续递增 |
 
 ### 2.2 TS SDK `sdk/ts`
 
