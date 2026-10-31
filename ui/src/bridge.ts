@@ -21,7 +21,8 @@ type Incoming =
   | Reply
   | { type: "command"; id: string }
   | { type: "toolbarAction"; id: string }
-  | { type: "toolbarSearch"; text: string };
+  | { type: "toolbarSearch"; text: string }
+  | { type: "tabSelected"; id: string };
 
 export const boot: Boot = window.__wisp_boot ?? { appID: "dev", lang: "en", title: "", hasBackend: false, window: "main" };
 
@@ -39,6 +40,7 @@ const waiting = new Map<number, Waiting>();
 const commandHandlers = new Map<string, () => void>();
 let toolbarActions: ((id: string) => void) | undefined;
 let toolbarSearchHandler: ((text: string) => void) | undefined;
+let tabHandler: ((id: string) => void) | undefined;
 let seq = 0;
 
 window.__wisp_recv = (batch) => {
@@ -53,6 +55,10 @@ window.__wisp_recv = (batch) => {
     }
     if (message.type === "toolbarSearch") {
       toolbarSearchHandler?.(message.text);
+      continue;
+    }
+    if (message.type === "tabSelected") {
+      tabHandler?.(message.id);
       continue;
     }
     const call = waiting.get(message.id);
@@ -149,10 +155,18 @@ export interface ToolbarItem {
   placeholder?: string;
 }
 
+export interface ToolbarTab {
+  id: string;
+  title: string;
+  symbol?: string;
+  selected?: boolean;
+}
+
 /** A window toolbar: plain semantics only, every control is native (docs/06-native-toolbar.md §3). */
 export interface ToolbarSpec {
   leading?: ToolbarItem[];
   trailing?: ToolbarItem[];
+  tabs?: ToolbarTab[];
 }
 
 /** Sends this window's toolbar; the host rebuilds only when the structure changes. */
@@ -164,4 +178,9 @@ export function registerToolbar(spec: ToolbarSpec): void {
 export function setToolbarHandlers(action: (id: string) => void, search?: (text: string) => void): void {
   toolbarActions = action;
   toolbarSearchHandler = search;
+}
+
+/** The selected native toolbar tab; the page switches its pane and sends the new `selected` flag. */
+export function setTabHandler(handler: (id: string) => void): void {
+  tabHandler = handler;
 }

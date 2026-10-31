@@ -1,6 +1,7 @@
 import { render as mount, type ComponentChildren, type VNode } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { boot, openSettings, setContentHeight, setWindowTitle } from "./bridge.ts";
+import { useTabs } from "./hooks.ts";
 
 /** Components take semantics only: no colours, fonts, sizes or margins can be passed. */
 type Kids = { children?: ComponentChildren };
@@ -359,29 +360,21 @@ export function Settings({ children }: { children: VNode<{ id: string; title: st
   const [active, setActive] = useState(panes[0]?.props.id);
   const body = useRef<HTMLDivElement>(null);
   const current = panes.find((p) => p.props.id === active) ?? panes[0];
+  useTabs(
+    panes.map((p) => ({ id: p.props.id, title: p.props.title, symbol: p.props.symbol, selected: p.props.id === current?.props.id })),
+    setActive,
+  );
   useEffect(() => setWindowTitle(current?.props.title ?? boot.title), [current?.props.title]);
   useLayoutEffect(() => {
     const el = body.current;
     if (!el) return;
-    const report = () => setContentHeight(el.getBoundingClientRect().height + (document.querySelector(".tabs") as HTMLElement).offsetHeight);
+    const report = () => setContentHeight(el.getBoundingClientRect().height);
     report();
     const watcher = new ResizeObserver(report);
     watcher.observe(el);
     return () => watcher.disconnect();
   }, [active]);
-  return (
-    <>
-      <nav class="tabs">
-        {panes.map((p) => (
-          <button key={p.props.id} class={cx("tab", p.props.id === current?.props.id && "active")} onClick={() => setActive(p.props.id)}>
-            <Icon symbol={p.props.symbol} />
-            {p.props.title}
-          </button>
-        ))}
-      </nav>
-      <div ref={body}>{current}</div>
-    </>
-  );
+  return <div ref={body}>{current}</div>;
 }
 
 /** One settings tab; `Settings` reads its props and shows the selected pane's children. */

@@ -23,6 +23,7 @@
 | `Window` | `ui/src/components.tsx` | 页面根布局；设置原生 `window.title` / `subtitle`；控制侧栏列是否显示 | `<Window title subtitle columns sidebar>` |
 | `Sidebar` / `Content` / `Detail` | 同上 | 内容列；列本身没有标题/工具栏 | 只放 children |
 | `useToolbar` | `ui/src/hooks.ts` | 声明本窗口原生 toolbar；host 回传动作/搜索 | `useToolbar(spec, handlers, onSearch?)` |
+| `useTabs` | 同上 | 声明原生设置分类标签并接收选中 id；`<Settings>` 内部使用 | `useTabs(tabs, onSelect)` |
 | `useSidebar` | 同上 | 侧栏可见状态和切换函数 | `const [visible, toggle] = useSidebar()` |
 | `useCommands` | 同上 | 注册原生菜单栏命令（文件/显示） | `useCommands([{ id, menu, title, shortcut, run }])` |
 | `Icon` | `ui/src/components.tsx` | SF Symbol 模板图，宿主生成 PNG，页面用 CSS mask 着色 | `<Icon symbol="plus" />` |
@@ -87,6 +88,7 @@ useToolbar(
 | 菜单按钮 | `{ id, symbol?, title?, menu }` | `NSMenuToolbarItem` + `NSMenu` | 每个 `NSMenuItem.representedObject` 是页面 id |
 | 搜索 | `{ id, search: true, placeholder? }` | `NSSearchToolbarItem` + `NSSearchField` | 文本变化回传 `toolbarSearch` |
 | 侧栏折叠 | `{ id, sidebar: true, help? }` | `NSToolbarItem`（`sidebar.left`） | 点击回传 `toolbarAction`，页面用 `useSidebar` 切列 |
+| 设置分类标签 | `ToolbarSpec.tabs: { id, title, symbol?, selected? }[]` | 每个 tab 一个 `NSToolbarItem` + `selectedItemIdentifier` | 点击回传 `tabSelected`；选中变化不重建 toolbar |
 
 ### 2.4 `useCommands` 与菜单栏
 
@@ -107,7 +109,7 @@ useCommands([{ id: "new", menu: "file", title: "新建对话", shortcut: "cmd+n"
 | 方法 | 产出 | 用途 |
 |---|---|---|
 | `makeAppWindow(for:content:)` | `NSWindow` | app 主窗口：`.titled` + `.fullSizeContentView` + `titlebarAppearsTransparent` + `toolbarStyle = .unified` |
-| `makeSettingsWindow(for:content:)` | `NSWindow` | app 设置窗口：原生标题栏，高度由页面 `height` 控制；Phase 1 不装 toolbar |
+| `makeSettingsWindow(for:content:)` | `NSWindow` | app 设置窗口：原生标题栏 + 原生分类标签 toolbar；高度由页面 `height` 控制 |
 | `makeLauncherPanel(content:)` | `NSPanel` | 浮窗启动器：`.nonactivatingPanel` + 透明背景，`LauncherPanel.canBecomeKey = true` |
 | `makeSettingsWindow(panes:)` | `NSWindow` | 壳自己的设置：`NSTabViewController(tabStyle: .toolbar)` + SwiftUI 表单 |
 
@@ -138,6 +140,8 @@ toolbar.apply(spec)                  // 收到 {type:"toolbar", spec} 后调用
 - 空 spec 保留一个 flexible space，保证标题栏高度一致。
 - 搜索文本由 controller 暂存并在重建时恢复；不要每敲一个字重建 toolbar。
 - 菜单的每个 `NSMenuItem` 用 `representedObject` 存页面 id；点击只回传 id。
+- `tabs` 的每个 pane 是一个 `NSToolbarItem`（SF Symbol + 标题），在 `toolbarSelectableItemIdentifiers` 里登记，选中态由 `NSToolbar.selectedItemIdentifier` 画；点击回传 `tabSelected`，不让页面传颜色/尺寸。
+- 设置窗口的 toolbar 用 `.preference` 样式：标题栏一行、标签栏一行，Web 内容在其下，不会被顶到标题栏下面。
 
 `ToolbarSpec` 模型在 `ShellCore/Model/ToolbarSpec.swift`：纯 `Decodable`，不 import AppKit。`WindowRequest.toolbar(ToolbarSpec)` 由 `AppSession` 解码后交给 `AppPageController`。
 
@@ -182,8 +186,8 @@ toolbar.apply(spec)                  // 收到 {type:"toolbar", spec} 后调用
 | 菜单栏、状态栏 | `MenuBarController` / `StatusItemController` | 原生 |
 | 壳设置窗口、浮窗启动器 | SwiftUI + `NSTabViewController` | 原生 |
 | app 设置窗口标题栏 | 原生标题栏 | 原生 |
-| app 设置分类标签 | Web `.tabs` | Web（Phase 2） |
-| app 设置表单控件 | Web | Web（Phase 2 之后再议） |
+| app 设置分类标签 | 原生 `NSToolbarItem` + `selectedItemIdentifier` | 原生 |
+| app 设置表单控件 | Web | Web（阶段 5 再议） |
 | 侧栏行/列表、内容列表、详情 | WKWebView + 设计系统 | Web |
 | 消息、Markdown、Composer | WKWebView | Web |
 | Agent 侧栏搜索 | Web `Search` | Web |
@@ -213,10 +217,10 @@ toolbar.apply(spec)                  // 收到 {type:"toolbar", spec} 后调用
 
 ## 6. 后续开发：仍是 Web 的部分
 
-### Phase 2（契约已定）
+### Phase 2
 
-1. **设置窗口分类标签栏**：把 `<Settings>` 的 Web `.tabs` 改成原生 toolbar tab 组，复用 `NativeToolbarController`/item 工厂；新增 `tabs` 语义和 `tabSelected` 回传。设置表单本身仍可先留在 Web。
-2. **页内 `ContextMenu`**：右击时页面把 `{items:[{id,title,destructive,disabled}]}` 发给宿主，宿主用 `NSMenu` 在鼠标位置弹出，选中回传 id。`Menu` 下拉可以稍后再迁。
+1. **设置窗口分类标签栏（已完成）**：`<Settings>` 的 Web `.tabs` 已改为原生 toolbar tab；新增 `ToolbarSpec.tabs`、`useTabs` 和 `tabSelected` 回传。设置表单仍留在 Web。
+2. **页内 `ContextMenu`（进行中）**：右击时页面把 `{items:[{id,title,destructive,disabled}]}` 发给宿主，宿主用 `NSMenu` 在鼠标位置弹出，选中回传 id。`Menu` 下拉可以稍后再迁。
 
 ### 后续 C 方向（需要先决策）
 

@@ -14,6 +14,9 @@ public final class AppPageController: NSViewController {
         },
         onSearch: { [weak self] text in
             self?.connection.push(["type": .string("toolbarSearch"), "text": .string(text)])
+        },
+        onTab: { [weak self] id in
+            self?.connection.push(["type": .string("tabSelected"), "id": .string(id)])
         })
 
     public init(connection: any AppConnection) {
@@ -51,7 +54,6 @@ public final class AppPageController: NSViewController {
             frame.origin = CGPoint(x: window.frame.minX, y: window.frame.maxY - frame.height)  // keep the top edge
             window.setFrame(frame, display: true, animate: window.isVisible)
         case .toolbar(let spec):
-            guard connection.kind == .main else { return }
             toolbarController.apply(spec)
         }
     }
@@ -78,10 +80,12 @@ public final class AppPageController: NSViewController {
         webView.load(URLRequest(url: URL(string: "\(PageScheme.name)://app/index.html")!))
     }
 
-    /// Main windows always get a toolbar, even before the page sends a spec, so the titlebar height is stable.
+    /// Every window gets a toolbar even before the page sends a spec, so the titlebar height is stable.
+    /// Settings windows use the preference style: native titlebar, then the tab row, then the page.
     public override func viewDidAppear() {
         super.viewDidAppear()
-        if connection.kind == .main, let window = view.window { toolbarController.install(on: window) }
+        guard let window = view.window else { return }
+        toolbarController.install(on: window, style: connection.kind == .settings ? .preference : .unified)
     }
 
     /// Break the handler → connection reference and release the backend link.

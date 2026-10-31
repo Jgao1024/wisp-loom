@@ -72,20 +72,49 @@ public struct ToolbarItem: Sendable, Equatable, Decodable {
     public var kind: Kind { sidebar ? .sidebar : (search ? .search : (menu.isEmpty ? .button : .menu)) }
 }
 
+/// A tab in a native toolbar tab group (settings panes). The page names it and says which one is selected;
+/// the host owns the control and only reports the clicked id back (docs/06-native-toolbar.md §3).
+public struct ToolbarTab: Sendable, Equatable, Decodable {
+    public let id: String
+    public let title: String
+    public let symbol: String?
+    public let selected: Bool
+
+    private enum CodingKeys: String, CodingKey { case id, title, symbol, selected }
+
+    public init(id: String, title: String, symbol: String? = nil, selected: Bool = false) {
+        self.id = id
+        self.title = title
+        self.symbol = symbol
+        self.selected = selected
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        symbol = try container.decodeIfPresent(String.self, forKey: .symbol)
+        selected = try container.decodeIfPresent(Bool.self, forKey: .selected) ?? false
+    }
+}
+
 public struct ToolbarSpec: Sendable, Equatable, Decodable {
     public let leading: [ToolbarItem]
     public let trailing: [ToolbarItem]
+    public let tabs: [ToolbarTab]
 
-    private enum CodingKeys: String, CodingKey { case leading, trailing }
+    private enum CodingKeys: String, CodingKey { case leading, trailing, tabs }
 
-    public init(leading: [ToolbarItem] = [], trailing: [ToolbarItem] = []) {
+    public init(leading: [ToolbarItem] = [], trailing: [ToolbarItem] = [], tabs: [ToolbarTab] = []) {
         self.leading = leading
         self.trailing = trailing
+        self.tabs = tabs
     }
 
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         leading = try container.decodeIfPresent([ToolbarItem].self, forKey: .leading) ?? []
         trailing = try container.decodeIfPresent([ToolbarItem].self, forKey: .trailing) ?? []
+        tabs = try container.decodeIfPresent([ToolbarTab].self, forKey: .tabs) ?? []
     }
 }

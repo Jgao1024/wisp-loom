@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
-import { registerCommands, registerToolbar, setToolbarHandlers, setting, setSetting, type CommandSpec, type ToolbarSpec } from "./bridge.ts";
+import {
+  registerCommands, registerToolbar, setTabHandler, setToolbarHandlers, setting, setSetting,
+  type CommandSpec, type ToolbarSpec, type ToolbarTab,
+} from "./bridge.ts";
 
 export { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 
@@ -57,6 +60,19 @@ export function useCommands(commands: CommandSpec[]): void {
   latest.current = commands;
   useEffect(() => {
     registerCommands(latest.current.map((c, i) => ({ ...c, run: () => latest.current[i]?.run() })));
+  }, [key]);
+}
+
+/** A native toolbar tab group (settings panes); the page owns the selected pane and reports only the id. */
+export function useTabs(tabs: ToolbarTab[], onSelect: (id: string) => void): void {
+  const key = JSON.stringify(tabs);
+  const latest = useRef(onSelect);
+  latest.current = onSelect;
+  useEffect(() => {
+    setTabHandler((id) => latest.current(id));
+  }, []);
+  useEffect(() => {
+    registerToolbar({ tabs });
   }, [key]);
 }
 

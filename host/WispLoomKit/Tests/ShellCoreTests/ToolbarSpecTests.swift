@@ -40,6 +40,20 @@ struct ToolbarSpecTests {
         #expect(spec.leading.first?.sidebar == true)
     }
 
+    @Test func decodesTabsAndSelection() throws {
+        let json = """
+            {"tabs":[
+              {"id":"general","title":"通用","symbol":"gearshape","selected":true},
+              {"id":"models","title":"模型","symbol":"cpu"}
+            ]}
+            """
+        let spec = try JSONDecoder().decode(ToolbarSpec.self, from: Data(json.utf8))
+        #expect(spec.tabs.map(\.id) == ["general", "models"])
+        #expect(spec.tabs.map(\.title) == ["通用", "模型"])
+        #expect(spec.tabs.map(\.selected) == [true, false])
+        #expect(spec.leading.isEmpty && spec.trailing.isEmpty)
+    }
+
     @Test func disabledMapsToEnabled() throws {
         let json = #"{"trailing":[{"id":"a","symbol":"plus","disabled":true},{"id":"b","symbol":"minus"}]}"#
         let spec = try JSONDecoder().decode(ToolbarSpec.self, from: Data(json.utf8))

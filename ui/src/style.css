@@ -121,12 +121,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 9px; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / .3); transition: transform .15s; }
 .switch:checked { background: var(--accent); }
 .switch:checked::after { transform: translateX(16px); }
-.tabs { display: flex; justify-content: center; gap: 2px; padding: 6px var(--space-s); border-bottom: 1px solid var(--separator); }
-.tab { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 80px; padding: 2px 10px; border: 0; background: transparent; border-radius: var(--radius-control); font-size: 11px; color: var(--text-secondary); }
-.tab.active { background: Canvas; color: var(--accent); }
-@media (prefers-color-scheme: dark) { .tab.active { background: var(--fill); } }
-.tab .icon-glyph { font-size: 22px; }
-
 /* Markdown */
 .markdown { font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; }
 .markdown > :first-child { margin-top: 0; }

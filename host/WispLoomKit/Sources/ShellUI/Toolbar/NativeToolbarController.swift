@@ -7,23 +7,30 @@ import ShellCore
 public final class NativeToolbarController: NSObject {
     private let onAction: (String) -> Void
     private let onSearch: (String) -> Void
+    private let onTab: (String) -> Void
     private weak var window: NSWindow?
     private var spec = ToolbarSpec()
     private var items: [NSToolbarItem.Identifier: ToolbarItem] = [:]
     private var leadingIDs: Set<String> = []
     private var searchText = ""
+    private static let tabPrefix = "wisp.tab."
 
-    public init(onAction: @escaping (String) -> Void, onSearch: @escaping (String) -> Void) {
+    public init(
+        onAction: @escaping (String) -> Void, onSearch: @escaping (String) -> Void,
+        onTab: @escaping (String) -> Void = { _ in }
+    ) {
         self.onAction = onAction
         self.onSearch = onSearch
+        self.onTab = onTab
         super.init()
     }
 
-    /// Installs the toolbar (empty until a spec arrives) so every main window has the same titlebar height.
-    public func install(on window: NSWindow) {
+    /// Installs the toolbar (empty until a spec arrives) so every window has the same titlebar height.
+    /// Settings windows pass `.preference` so the tabs get their own row below the native titlebar.
+    public func install(on window: NSWindow, style: NSWindow.ToolbarStyle = .unified) {
         guard self.window !== window else { return }
         self.window = window
-        window.toolbarStyle = .unified
+        window.toolbarStyle = style
         window.titleVisibility = .visible
         rebuild()
     }
@@ -38,6 +45,7 @@ public final class NativeToolbarController: NSObject {
             rebuild()
         } else {
             updateEnabled()
+            updateSelection()
         }
     }
 
@@ -49,19 +57,35 @@ public final class NativeToolbarController: NSObject {
         let toolbar = NSToolbar(identifier: "wisp.windowToolbar")
         toolbar.delegate = self
         toolbar.allowsUserCustomization = false
-        toolbar.displayMode = .iconOnly
         toolbar.sizeMode = .regular
         window.toolbar = toolbar
+        toolbar.displayMode = spec.tabs.isEmpty ? .iconOnly : .iconAndLabel
+        toolbar.selectedItemIdentifier = selectedTabIdentifier
     }
 
-    /// Everything that requires new AppKit controls; `disabled` is deliberately absent.
+    /// Everything that requires new AppKit controls; `disabled` and tab `selected` are deliberately absent.
     private func structure(of spec: ToolbarSpec) -> [String] {
         let key: (ToolbarItem) -> String = { item in
             let menu = item.menu.map { "\($0.id)|\($0.title)|\($0.destructive)" }.joined(separator: ";")
             let fields = [item.symbol, item.title, item.help, item.placeholder].map { $0 ?? "" }
             return "\(item.kind)|" + ([item.id] + fields + [menu]).joined(separator: "|")
         }
-        return spec.leading.map(key) + ["-"] + spec.trailing.map(key)
+        let tabs = spec.tabs.map { "\($0.id)|\($0.title)|\($0.symbol ?? "")" }.joined(separator: ";")
+        return spec.leading.map(key) + ["-"] + spec.trailing.map(key) + ["tabs", tabs]
+    }
+
+    private func updateSelection() {
+        guard let toolbar = window?.toolbar, !spec.tabs.isEmpty else { return }
+        toolbar.selectedItemIdentifier = selectedTabIdentifier
+    }
+
+    private var selectedTabIdentifier: NSToolbarItem.Identifier? {
+        guard let tab = spec.tabs.first(where: \.selected) else { return nil }
+        return Self.tabIdentifier(for: tab.id)
+    }
+
+    private static func tabIdentifier(for id: String) -> NSToolbarItem.Identifier {
+        NSToolbarItem.Identifier(tabPrefix + id)
     }
 
     private func updateEnabled() {
@@ -143,6 +167,24 @@ public final class NativeToolbarController: NSObject {
         return menu
     }
 
+    /// One settings pane tab: a native toolbar item with an SF Symbol and its title. Selection is drawn by
+    /// `NSToolbar.selectedItemIdentifier`, the same mechanism the system tab-style settings windows use.
+    private func makeTabItem(_ tab: ToolbarTab) -> NSToolbarItem {
+        let identifier = Self.tabIdentifier(for: tab.id)
+        let control = NSToolbarItem(itemIdentifier: identifier)
+        if let symbol = tab.symbol {
+            control.image = NSImage(systemSymbolName: symbol, accessibilityDescription: tab.title)
+        }
+        control.label = tab.title
+        control.paletteLabel = tab.title
+        control.toolTip = tab.title
+        control.isBordered = false
+        control.target = self
+        control.action = #selector(tabClicked(_:))
+        control.isNavigational = true
+        return control
+    }
+
     @objc private func buttonClicked(_ sender: NSToolbarItem) {
         guard let item = items[sender.itemIdentifier] else { return }
         onAction(item.id)
@@ -152,25 +194,44 @@ public final class NativeToolbarController: NSObject {
         guard let id = sender.representedObject as? String else { return }
         onAction(id)
     }
+
+    @objc private func tabClicked(_ sender: NSToolbarItem) {
+        let prefix = Self.tabPrefix
+        let id = String(sender.itemIdentifier.rawValue.dropFirst(prefix.count))
+        guard spec.tabs.contains(where: { $0.id == id }) else { return }
+        onTab(id)
+    }
 }
 
 extension NativeToolbarController: NSToolbarDelegate {
     public func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
         let leading = spec.leading.map { Self.identifier(for: $0.id) }
         let trailing = spec.trailing.map { Self.identifier(for: $0.id) }
-        // The flexible space keeps trailing items on the right; even an empty spec keeps one so
-        // the window keeps the same titlebar height.
-        return leading + [.flexibleSpace] + trailing
+        // The flexible space keeps trailing items on the right; tabs sit between two flexible spaces so a
+        // tabs-only settings toolbar is centred. Even an empty spec keeps one space for a stable titlebar.
+        guard !spec.tabs.isEmpty else { return leading + [.flexibleSpace] + trailing }
+        return leading + [.flexibleSpace] + spec.tabs.map { Self.tabIdentifier(for: $0.id) } + [.flexibleSpace]
+            + trailing
+    }
+
+    public func toolbarSelectableItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+        spec.tabs.map { Self.tabIdentifier(for: $0.id) }
     }
 
     public func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [.flexibleSpace] + (spec.leading + spec.trailing).map { Self.identifier(for: $0.id) }
+        [.flexibleSpace] + spec.tabs.map { Self.tabIdentifier(for: $0.id) }
+            + (spec.leading + spec.trailing).map { Self.identifier(for: $0.id) }
     }
 
     public func toolbar(
         _ toolbar: NSToolbar, itemForItemIdentifier identifier: NSToolbarItem.Identifier,
         willBeInsertedIntoToolbar flag: Bool
     ) -> NSToolbarItem? {
+        if identifier.rawValue.hasPrefix(Self.tabPrefix),
+            let tab = spec.tabs.first(where: { Self.tabIdentifier(for: $0.id) == identifier })
+        {
+            return makeTabItem(tab)
+        }
         guard let item = items[identifier] else { return nil }
         return makeItem(item, identifier: identifier)
     }

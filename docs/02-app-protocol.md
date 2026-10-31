@@ -42,7 +42,7 @@
 | `cancel` | `id` | 取消一个进行中的 `call` |
 | `setting` / `setSetting` | `id` `key` / `key` `value` | 读写 app 设置（UserDefaults，按 app id 隔离）；写入后广播给同 app 的其他窗口 |
 | `commands` | `commands[]` | 注册菜单栏命令 `{id, menu, title, shortcut?, disabled?}` |
-| `toolbar` | `spec` | 设置/更新本窗口的原生 toolbar；结构见 `docs/06-native-toolbar.md` |
+| `toolbar` | `spec` | 设置/更新本窗口的原生 toolbar（含设置分类 `tabs`）；结构见 `docs/06-native-toolbar.md` |
 | `title` / `height` | | 窗口标题/副标题、设置窗口高度（原生 toolbar 显示标题） |
 | `openSettings` / `log` | | 打开 app 设置窗口、写宿主日志 |
 
@@ -54,6 +54,7 @@
 | `command` | `id` | 菜单命令被触发 |
 | `toolbarAction` | `id` | 原生 toolbar 按钮/菜单项被点击 |
 | `toolbarSearch` | `text` | 原生搜索框文本变化 |
+| `tabSelected` | `id` | 原生设置分类标签被选中 |
 | `settingChanged` | `key` `value` | 其他窗口改了设置 |
 
 启动参数：`window.__wisp_boot = {appID, lang, title, hasBackend, window}`，在任何脚本之前注入。
@@ -63,7 +64,7 @@
 Preact 渲染 DOM，不再有自己的 reconciler 和 patch 协议。SDK 提供：
 
 - 设计系统组件和样式表（见 03）；
-- hooks：Preact 全套，加 `usePersisted`（设置）、`useStream`（流式文本，每帧至多重渲染一次）、`useCommands`（菜单命令）、`useToolbar`（原生 toolbar 声明）、`useSidebar`（侧栏显示状态）；
+- hooks：Preact 全套，加 `usePersisted`（设置）、`useStream`（流式文本，每帧至多重渲染一次）、`useCommands`（菜单命令）、`useToolbar`（原生 toolbar 声明）、`useTabs`（设置分类标签，`Settings` 内部使用）、`useSidebar`（侧栏显示状态）；
 - 桥：`call(method, params, {onEvent})` 返回带 `abort()` 的 Promise，`setting` / `setSetting` / `setSecret` / `deleteSecret`，`registerCommands`，`registerToolbar`；
 - `run(app, settings?)` 把页面挂到 `document.body`。
 - 窗口 toolbar 的侧栏折叠 item 带 `sidebar: true`，点击仍回传 `{type:"toolbarAction", id}`；页面把 `useSidebar` 的 toggle 绑到该 id，并用 `Window sidebar` 切列。
@@ -82,7 +83,7 @@ Preact 渲染 DOM，不再有自己的 reconciler 和 patch 协议。SDK 提供�
 
 ## 2.6 原生 toolbar
 
-Phase 1 的完整契约见 `docs/06-native-toolbar.md`：宿主一个通用 `NativeToolbarController`，页面用 `useToolbar(spec, handlers, onSearch?)` 声明；每个 app 只写 item 和 handler，不写 Swift/CSS。设置窗口标签栏、页内 `ContextMenu` 是 Phase 2，仍走 Web。
+Phase 1 的完整契约见 `docs/06-native-toolbar.md`：宿主一个通用 `NativeToolbarController`，页面用 `useToolbar(spec, handlers, onSearch?)` 声明；每个 app 只写 item 和 handler，不写 Swift/CSS。设置窗口标签栏已是原生（`tabs` + `tabSelected`）；页内 `ContextMenu` 仍是 Web，Phase 2 再迁。
 
 ## 3. 后端通道 `[Swift]` ↔ `[Rust]` / `[Py]` / `[Go]`
 

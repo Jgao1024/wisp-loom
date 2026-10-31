@@ -8,6 +8,7 @@ import {
   registerCommands,
   registerToolbar,
   setSecret,
+  setTabHandler,
   setSetting,
   setToolbarHandlers,
   setting,
@@ -111,4 +112,20 @@ test("toolbar specs are posted and native actions/search reach the latest handle
   setToolbarHandlers((id) => calls.push(`action:${id}`), (text) => calls.push(`search:${text}`));
   answer({ type: "toolbarAction", id: "new" }, { type: "toolbarSearch", text: "abc" });
   assert.deepEqual(calls, ["action:new", "search:abc"]);
+});
+
+test("settings tabs are posted and the selected pane comes back by id", () => {
+  take();
+  const tabs = [
+    { id: "general", title: "General", symbol: "gearshape", selected: true },
+    { id: "models", title: "Models", symbol: "cpu" },
+  ];
+  registerToolbar({ tabs });
+  assert.deepEqual(take(), [{ type: "toolbar", spec: { tabs } }]);
+
+  const selected: string[] = [];
+  setTabHandler((id) => selected.push("stale"));
+  setTabHandler((id) => selected.push(id));
+  answer({ type: "tabSelected", id: "models" });
+  assert.deepEqual(selected, ["models"]);
 });

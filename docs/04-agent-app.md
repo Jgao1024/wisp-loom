@@ -34,8 +34,8 @@
 **原生/Web 范围（Phase 1）：**
 
 - 原生：窗口、红绿灯、标题栏、标题/副标题、toolbar 按钮/菜单/搜索/侧栏折叠、菜单栏。
-- Web：侧栏列表、内容列表、消息/Markdown、Composer、页内右键菜单、设置表单和分类标签。
-- 设置窗口的分类标签是 Phase 2 才迁原生；Phase 1 仍是 Web 标签。
+- Web：侧栏列表、内容列表、消息/Markdown、Composer、页内右键菜单、设置表单。
+- 设置窗口的分类标签已是原生 toolbar tab（`Settings` 内部用 `useTabs`）；表单仍是 Web。
 - 内容组件只改 `ui/`；原生 toolbar 是宿主一次实现 + `useToolbar` 声明，不做 per-app Swift。
 
 图 5 的“项目 / 任务”分组、“自主模式”、用户头像不进第一版。
@@ -51,7 +51,7 @@
 | Agent `person.crop.square` | M2 补：名称、提示词、工具、skill |
 | 工具 `wrench.and.screwdriver` / Skill `book` | M3 补 |
 
-本轮只做通用与模型两个分类的表单骨架；模型分类里的 `ListDetail`（服务商列表）、拉取模型、测试连接要等 M1 后端。设置分类标签在 Phase 2 迁原生，Phase 1 仍由 `<Settings>` 画 Web 标签。
+本轮只做通用与模型两个分类的表单骨架；模型分类里的 `ListDetail`（服务商列表）、拉取模型、测试连接要等 M1 后端。设置分类标签已由宿主原生 toolbar 渲染，app 仍只声明 `<Pane>` 列表。
 
 ## 2. 数据模型
 

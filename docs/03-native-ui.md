@@ -2,7 +2,7 @@
 
 原生组件的登记、复用方式和“为什么侧栏不用 NSSplitView”见 `docs/07-native-components.md`。
 
-所有 app 的布局、内容都照 macOS 原生应用（手记、密码、备忘录、邮件）来做。窗口级控件（标题栏、工具栏、菜单；设置标签栏 Phase 2）由宿主用 AppKit 原生实现；内容区在 WKWebView 里由 TS 渲染，只能用设计系统组件，样式表只用系统字体、系统颜色和少量间距令牌。完整契约见 `docs/06-native-toolbar.md`。
+所有 app 的布局、内容都照 macOS 原生应用（手记、密码、备忘录、邮件）来做。窗口级控件（标题栏、工具栏、菜单、设置分类标签）由宿主用 AppKit 原生实现；内容区在 WKWebView 里由 TS 渲染，只能用设计系统组件，样式表只用系统字体、系统颜色和少量间距令牌。完整契约见 `docs/06-native-toolbar.md`。
 
 判断标准：窗口级控件必须是 `NSToolbar` / `NSButton` / `NSMenu` / `NSSearchField` 实例；内容区截图和同类系统 app 放一起看不出明显差别，深浅色、强调色、辅助功能跟随系统。
 
@@ -62,8 +62,8 @@
 
 ## 3. 设置窗口（图 4）
 
-- 壳自己的设置是 `NSTabViewController(tabStyle: .toolbar)`，每个分类里放一个 SwiftUI `Form(.grouped)`（`WindowFactory.makeSettingsWindow(panes:)`）。每个 app 的设置是同一个页面脚本在 `window: "settings"` 下渲染的 `<Settings>`：窗口顶部是分类标签，窗口高度按当前分类内容动画调整。设置窗口不是侧栏材质：页面给 `body` 铺窗口背景（浅色时浅灰、卡片白；深色时深灰、卡片稍亮），分组标题在卡片外。
-- Phase 1 的 app 设置窗口仍是原生标题栏 + Web 分类标签；Phase 2 把标签栏改用 `NSToolbar`，复用同一套 toolbar item 工厂（见 06）。
+- 壳自己的设置是 `NSTabViewController(tabStyle: .toolbar)`，每个分类里放一个 SwiftUI `Form(.grouped)`（`WindowFactory.makeSettingsWindow(panes:)`）。每个 app 的设置是同一个页面脚本在 `window: "settings"` 下渲染的 `<Settings>`：窗口顶部是原生分类标签（`.preference` toolbar 样式：标题栏一行、标签栏一行），窗口高度按当前分类内容动画调整。设置窗口不是侧栏材质：页面给 `body` 铺窗口背景（浅色时浅灰、卡片白；深色时深灰、卡片稍亮），分组标题在卡片外。
+- app 设置分类标签已用原生 `NSToolbarItem`（SF Symbol + 标题）和 `NSToolbar.selectedItemIdentifier`，复用同一套 toolbar item 工厂（见 06/07）；表单控件仍在 Web。
 - 每个分类一个 `Pane`，里面是 `Section` 分组的 `Toggle` / `Picker` / `TextField` / `SecureField`；改动立即写入 app 设置并广播给同 app 的其他窗口。
 - 由 app 菜单的“设置… ⌘,”打开，manifest 里 `settings: true` 才有。
 
