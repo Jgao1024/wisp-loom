@@ -30,6 +30,16 @@ func doubleClick(_ x: Double, _ y: Double) {
     }
 }
 
+func rightClick(_ x: Double, _ y: Double) {
+    let point = CGPoint(x: x, y: y)
+    post(.mouseMoved, at: point)
+    for type in [CGEventType.rightMouseDown, .rightMouseUp] {
+        CGEvent(mouseEventSource: nil, mouseType: type, mouseCursorPosition: point, mouseButton: .right)?
+            .post(tap: .cghidEventTap)
+        usleep(70_000)
+    }
+}
+
 func drag(_ x1: Double, _ y1: Double, _ x2: Double, _ y2: Double) {
     let start = CGPoint(x: x1, y: y1)
     post(.mouseMoved, at: start)
@@ -81,28 +91,38 @@ func type(_ text: String) {
 let keyCodes: [String: CGKeyCode] = [
     "return": 36, "tab": 48, "escape": 53, "space": 49, "backspace": 51,
     "down": 125, "up": 126, "left": 123, "right": 124,
+    "n": 45, "comma": 43,
 ]
 
 func press(_ name: String) {
-    guard let code = keyCodes[name] else {
+    var flags: CGEventFlags = []
+    var keyName = name
+    if name.hasPrefix("cmd+") { flags = .maskCommand; keyName = String(name.dropFirst(4)) }
+    else if name.hasPrefix("shift+") { flags = .maskShift; keyName = String(name.dropFirst(6)) }
+    guard let code = keyCodes[keyName] else {
         FileHandle.standardError.write(Data("ui-event: unknown key \(name)\n".utf8))
         exit(2)
     }
     let source = CGEventSource(stateID: .hidSystemState)
-    CGEvent(keyboardEventSource: source, virtualKey: code, keyDown: true)?.post(tap: .cghidEventTap)
+    let down = CGEvent(keyboardEventSource: source, virtualKey: code, keyDown: true)
+    let up = CGEvent(keyboardEventSource: source, virtualKey: code, keyDown: false)
+    down?.flags = flags
+    up?.flags = flags
+    down?.post(tap: .cghidEventTap)
     usleep(20_000)
-    CGEvent(keyboardEventSource: source, virtualKey: code, keyDown: false)?.post(tap: .cghidEventTap)
+    up?.post(tap: .cghidEventTap)
     usleep(20_000)
 }
 
 let args = CommandLine.arguments
 guard args.count >= 2 else {
-    FileHandle.standardError.write(Data("usage: ui-event click x y | doubleclick x y | type text | key name | drag x1 y1 x2 y2 | away x y w h | activate bundle-id\n".utf8))
+    FileHandle.standardError.write(Data("usage: ui-event click x y | rightclick x y | doubleclick x y | type text | key name | drag x1 y1 x2 y2 | away x y w h | activate bundle-id\n".utf8))
     exit(2)
 }
 switch args[1] {
 case "click" where args.count == 4: click(Double(args[2])!, Double(args[3])!)
 case "doubleclick" where args.count == 4: doubleClick(Double(args[2])!, Double(args[3])!)
+case "rightclick" where args.count == 4: rightClick(Double(args[2])!, Double(args[3])!)
 case "type" where args.count == 3: type(args[2])
 case "key" where args.count == 3: press(args[2])
 case "drag" where args.count == 6:

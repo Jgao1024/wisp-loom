@@ -30,6 +30,7 @@ owner="Wisp"
 title=""
 do_build=1
 delay=1.0
+after=0.4
 app_path=${WISP_APP:-build/DerivedData/Build/Products/Debug/WispLoom.app}
 actions=()
 while [ $# -gt 0 ]; do
@@ -41,6 +42,7 @@ while [ $# -gt 0 ]; do
         --owner) owner=${2:-}; shift ;;
         --no-build) do_build=0 ;;
         --delay) delay=${2:-}; shift ;;
+        --after) after=${2:-}; shift ;;
         --click) actions+=("click ${2:-}"); shift ;;
         --type) actions+=("type ${2:-}"); shift ;;
         --key) actions+=("key ${2:-}"); shift ;;
@@ -165,8 +167,8 @@ if [ ${#actions[@]} -gt 0 ]; then
         esac
         sleep 0.3
     done
-    sleep 0.4
 fi
+sleep "$after"
 
 window=$("$window_helper" "${find_args[@]}" 2>/dev/null || true)
 [ -n "$window" ] || { echo "shot.sh: window disappeared before capture" >&2; exit 1; }

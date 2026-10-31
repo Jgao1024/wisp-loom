@@ -35,6 +35,8 @@ M1 新增的组件都只改 `ui/`（TS 和 CSS），不改 Swift。
 
 图 5 的“项目 / 任务”分组、“自主模式”、用户头像不进第一版。
 
+本轮只搭界面骨架：`apps/agent` 没有 backend，数据是 `ui/mock.ts` 里的静态 mock；发送只在本地追加消息，并用 `useStream` 模拟逐字输出，不调用 `call()`。
+
 设置窗口（app 菜单 → 设置… ⌘,）：
 
 | 分类 | 内容 |
@@ -43,6 +45,8 @@ M1 新增的组件都只改 `ui/`（TS 和 CSS），不改 Swift。
 | 模型 `cpu` | `ListDetail`：左侧服务商列表 `+ / −`；右侧名称、协议、Base URL、API Key（`SecureField`）、模型列表（拉取 / 手动添加）、测试连接 |
 | Agent `person.crop.square` | M2 补：名称、提示词、工具、skill |
 | 工具 `wrench.and.screwdriver` / Skill `book` | M3 补 |
+
+本轮只做通用与模型两个分类的表单骨架；模型分类里的 `ListDetail`（服务商列表）、拉取模型、测试连接要等 M1 后端。
 
 ## 2. 数据模型
 

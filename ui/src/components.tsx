@@ -66,10 +66,52 @@ export function Search({ value, placeholder, onInput }: { value: string; placeho
   );
 }
 
+/** Message input: Enter sends, Shift+Enter inserts a newline; sending clears the field. `busy` turns the
+ *  send button into stop (the app decides what stopping means). */
+export function Composer({ value, placeholder, onChange, onSend, busy, onStop, sendWith = "return", children }: {
+  value: string; placeholder?: string; onChange: (text: string) => void; onSend: () => void;
+  busy?: boolean; onStop?: () => void; sendWith?: "return" | "cmd+return"; children?: ComponentChildren;
+}) {
+  const submit = () => {
+    if (busy || !value.trim()) return;
+    onSend();
+    onChange("");
+  };
+  return (
+    <div class="composer">
+      <textarea
+        class="composer-input"
+        rows={1}
+        value={value}
+        placeholder={placeholder}
+        onInput={(e) => onChange(e.currentTarget.value)}
+        onKeyDown={(e) => {
+          if (e.key !== "Enter" || e.isComposing || e.shiftKey) return;
+          if (sendWith === "return" ? e.metaKey : !e.metaKey) return;
+          e.preventDefault();
+          submit();
+        }}
+      />
+      <div class="composer-bar">
+        <Button symbol="plus" help="附件（M3）" disabled />
+        <span class="spacer" />
+        {children}
+        <Button
+          symbol={busy ? "stop.fill" : "arrow.up"}
+          prominent
+          disabled={!busy && !value.trim()}
+          help={busy ? "停止生成" : "发送"}
+          onAction={busy ? onStop ?? (() => {}) : submit}
+        />
+      </div>
+    </div>
+  );
+}
+
 // ---- Controls -----------------------------------------------------------------------------
 
 export function Button({ title, symbol, role, prominent, disabled, help, onAction }: {
-  title?: string; symbol?: string; role?: "destructive"; prominent?: boolean; disabled?: boolean; help?: string; onAction: () => void;
+  title?: string; symbol?: string; role?: "destructive"; prominent?: boolean; disabled?: boolean; help?: string; onAction?: () => void;
 }) {
   return (
     <button class={cx("btn", prominent && "prominent", role === "destructive" && "destructive", !title && "icon")} disabled={disabled} title={help} onClick={onAction}>
@@ -99,6 +141,57 @@ export function Menu({ title, symbol, children }: { title?: string; symbol?: str
   );
 }
 
+export interface ContextMenuItem {
+  title: string;
+  onAction: () => void;
+  destructive?: boolean;
+}
+
+/** Right-click menu at the pointer; clicking elsewhere or Escape closes it. */
+export function ContextMenu({ items, children }: { items: ContextMenuItem[] } & Kids) {
+  const [at, setAt] = useState<{ x: number; y: number } | null>(null);
+  useEffect(() => {
+    if (!at) return;
+    const away = () => setAt(null);
+    const escape = (e: KeyboardEvent) => e.key === "Escape" && setAt(null);
+    document.addEventListener("mousedown", away);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("mousedown", away);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [at]);
+  return (
+    <div
+      class="context"
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setAt({
+          x: Math.min(e.clientX, window.innerWidth - 188),
+          y: Math.min(e.clientY, window.innerHeight - items.length * 30 - 16),
+        });
+      }}
+    >
+      {children}
+      {at && (
+        <div class="menu-pop context-pop" style={{ left: `${at.x}px`, top: `${at.y}px` }} onMouseDown={(e) => e.stopPropagation()}>
+          {items.map((item) => (
+            <Button
+              key={item.title}
+              title={item.title}
+              role={item.destructive ? "destructive" : undefined}
+              onAction={() => {
+                setAt(null);
+                item.onAction();
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export const Divider = () => <hr class="divider" />;
 export const Spacer = () => <span class="spacer" />;
 
@@ -118,6 +211,103 @@ export function Empty({ title, symbol, description }: { title: string; symbol?: 
       {description && <p class="text">{description}</p>}
     </div>
   );
+}
+
+/** A scrolling region; `anchor="bottom"` keeps the newest content in view (chat transcripts). */
+export function Scroll({ anchor, children }: { anchor?: "bottom" } & Kids) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (anchor === "bottom") ref.current?.scrollTo({ top: ref.current.scrollHeight });
+  });
+  return <div class="scroll" ref={ref} data-anchor={anchor}>{children}</div>;
+}
+
+// ---- Markdown -----------------------------------------------------------------------------
+
+/** Inline marks for now: `code`. Everything else is plain text. */
+function inline(text: string): ComponentChildren[] {
+  return text
+    .split(/(`[^`]*`)/g)
+    .filter(Boolean)
+    .map((part, index) =>
+      part.length > 1 && part.startsWith("`") && part.endsWith("`")
+        ? <code key={index}>{part.slice(1, -1)}</code>
+        : part
+    );
+}
+
+const breakPattern = /^(#{1,6}\s|```|>\s?|\s*[-*]\s+|\s*\d+\.\s+)/;
+
+function parseBlocks(text: string): ComponentChildren[] {
+  const lines = text.split("\n");
+  const blocks: ComponentChildren[] = [];
+  let index = 0;
+  while (index < lines.length) {
+    const line = lines[index] ?? "";
+    const fence = line.match(/^```(\w*)/);
+    if (fence) {
+      const code: string[] = [];
+      index++;
+      while (index < lines.length && !/^```/.test(lines[index] ?? "")) {
+        code.push(lines[index] ?? "");
+        index++;
+      }
+      index++;
+      blocks.push(<pre key={blocks.length}><code>{code.join("\n")}</code></pre>);
+      continue;
+    }
+    const heading = line.match(/^(#{1,6})\s+(.*)$/);
+    if (heading) {
+      const level = (heading[1] ?? "#").length;
+      const Tag = `h${level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+      blocks.push(<Tag key={blocks.length}>{inline(heading[2] ?? "")}</Tag>);
+      index++;
+      continue;
+    }
+    if (/^>\s?/.test(line)) {
+      const quote: string[] = [];
+      while (index < lines.length && /^>\s?/.test(lines[index] ?? "")) {
+        quote.push((lines[index] ?? "").replace(/^>\s?/, ""));
+        index++;
+      }
+      blocks.push(<blockquote key={blocks.length}>{inline(quote.join(" "))}</blockquote>);
+      continue;
+    }
+    if (/^\s*[-*]\s+/.test(line)) {
+      const items: string[] = [];
+      while (index < lines.length && /^\s*[-*]\s+/.test(lines[index] ?? "")) {
+        items.push((lines[index] ?? "").replace(/^\s*[-*]\s+/, ""));
+        index++;
+      }
+      blocks.push(<ul key={blocks.length}>{items.map((item, i) => <li key={i}>{inline(item)}</li>)}</ul>);
+      continue;
+    }
+    if (/^\s*\d+\.\s+/.test(line)) {
+      const items: string[] = [];
+      while (index < lines.length && /^\s*\d+\.\s+/.test(lines[index] ?? "")) {
+        items.push((lines[index] ?? "").replace(/^\s*\d+\.\s+/, ""));
+        index++;
+      }
+      blocks.push(<ol key={blocks.length}>{items.map((item, i) => <li key={i}>{inline(item)}</li>)}</ol>);
+      continue;
+    }
+    if (line.trim() === "") {
+      index++;
+      continue;
+    }
+    const paragraph: string[] = [];
+    while (index < lines.length && (lines[index] ?? "").trim() !== "" && !breakPattern.test(lines[index] ?? "")) {
+      paragraph.push(lines[index] ?? "");
+      index++;
+    }
+    blocks.push(<p key={blocks.length}>{inline(paragraph.join(" "))}</p>);
+  }
+  return blocks;
+}
+
+/** Message body: paragraphs, headings, lists, fenced code, inline code and quotes. Tables come later. */
+export function Markdown({ text }: { text: string }) {
+  return <div class="markdown" data-selectable>{parseBlocks(text)}</div>;
 }
 
 // ---- Lists --------------------------------------------------------------------------------

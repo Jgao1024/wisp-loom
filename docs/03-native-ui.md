@@ -93,9 +93,13 @@ run(<Main />, (
 | `SidebarTiles` `Tile` | 卡片侧栏 | `title` `symbol` `count` `tint` `selected` `onAction` |
 | `Text` `Stack` `Spacer` `Divider` `Empty` | 内容 | `Text`：`style` `selectable`；`Stack`：`axis` `spacing`（tight/regular/loose） |
 | `Settings` `Pane` `Toggle` `Picker` `TextField` `SecureField` | 设置窗口 | `value` `placeholder` `onChange` |
+| `Scroll` | 可滚动区域；`anchor="bottom"` 时贴底（消息流） | `anchor` |
+| `Markdown` | 消息正文：段落、标题、列表、代码块、行内代码、引用（表格后置） | `text` |
+| `Composer` | 输入区：回车发送、⇧回车换行，发送后清空；`busy` 时变停止 | `value` `placeholder` `onChange` `onSend` `busy` `onStop` `sendWith` |
+| `ContextMenu` | 右键菜单，`items` 为 `{title, onAction, destructive}` | `items` |
 | `useCommands` | 菜单栏命令（hook，不是组件） | `{id, menu, title, shortcut, run}` |
 
-新增组件的流程：先在这张表加一行 → `ui/src/components.tsx` 和 `ui/src/style.css` → 示例或测试用到。没有 app 用到的组件不加；不需要改 Swift。`Markdown` `Scroll` `Composer` `Sheet` `Popover` `ListDetail` 等 M1 起随 Agent 加入。
+新增组件的流程：先在这张表加一行 → `ui/src/components.tsx` 和 `ui/src/style.css` → 示例或测试用到。没有 app 用到的组件不加；不需要改 Swift。`Sheet` `Popover` `ListDetail` 等随后续 Agent 阶段加入。
 
 ## 5. 性能要求
 

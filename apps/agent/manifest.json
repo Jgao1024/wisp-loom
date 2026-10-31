@@ -1,0 +1,25 @@
+{
+  "id": "dev.wisp.agent",
+  "name": {
+    "zh-Hans": "Agent",
+    "en": "Agent"
+  },
+  "category": {
+    "zh-Hans": "效率",
+    "en": "Productivity"
+  },
+  "symbol": "sparkles",
+  "tint": "purple",
+  "ui": "ui.js",
+  "window": {
+    "size": [
+      1000,
+      700
+    ],
+    "min": [
+      720,
+      480
+    ]
+  },
+  "settings": true
+}
