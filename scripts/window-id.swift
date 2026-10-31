@@ -29,10 +29,11 @@ for window in windows {
     let windowName = window[kCGWindowName as String] as? String ?? ""
     guard title.isEmpty || windowName.localizedCaseInsensitiveContains(title) else { continue }
     guard let bounds = window[kCGWindowBounds as String] as? [String: CGFloat],
-        let width = bounds["Width"], let height = bounds["Height"], width >= minWidth
+        let x = bounds["X"], let y = bounds["Y"], let width = bounds["Width"], let height = bounds["Height"],
+        width >= minWidth
     else { continue }
     let number = window[kCGWindowNumber as String] as? Int ?? 0
-    print("\(number)\t\(Int(width))\t\(Int(height))\t\(windowName)")
+    print("\(number)\t\(Int(x))\t\(Int(y))\t\(Int(width))\t\(Int(height))\t\(windowName)")
     exit(0)
 }
 exit(1)

@@ -19,7 +19,7 @@
 ```
 
 - `Window columns={2}`：侧栏 + 详情。窗口是 `.fullSizeContentView`，WebView 铺满整个窗口，背后是 `NSVisualEffectView(.sidebar)`；侧栏列不画背景，所以显示系统侧栏材质，内容列和详情列是不透明的 `Canvas`。
-- 标题栏区域属于页面：每列顶部有一条可拖动的标题条（拖动、双击缩放由宿主执行），红绿灯落在侧栏顶部。
+- 标题栏区域属于页面：每列顶部有一条可拖动的标题条（拖动、双击缩放由宿主执行），红绿灯落在侧栏顶部；侧栏没有标题时也保留同高度的空标题条，同样可拖动。
 - 列的标题和工具栏用 `Content` / `Detail` 的 `title`、`subtitle`、`toolbar` 属性；相邻按钮用 `ToolbarGroup` 合成一个胶囊。
 
 ### 1.2 三栏（参考密码，图 2）
@@ -61,7 +61,7 @@
 
 ## 3. 设置窗口（图 4）
 
-- 壳自己的设置是 `NSTabViewController(tabStyle: .toolbar)`，每个分类里放一个 SwiftUI `Form(.grouped)`（`WindowFactory.makeSettingsWindow(panes:)`）。每个 app 的设置是同一个页面脚本在 `window: "settings"` 下渲染的 `<Settings>`：窗口顶部是 toolbar 风格的分类标签，窗口高度按当前分类内容动画调整。
+- 壳自己的设置是 `NSTabViewController(tabStyle: .toolbar)`，每个分类里放一个 SwiftUI `Form(.grouped)`（`WindowFactory.makeSettingsWindow(panes:)`）。每个 app 的设置是同一个页面脚本在 `window: "settings"` 下渲染的 `<Settings>`：窗口顶部是 toolbar 风格的分类标签，窗口高度按当前分类内容动画调整。设置窗口不是侧栏材质：页面给 `body` 铺窗口背景（浅色时浅灰、卡片白；深色时深灰、卡片稍亮），分组标题在卡片外。
 - 每个分类一个 `Pane`，里面是 `Section` 分组的 `Toggle` / `Picker` / `TextField` / `SecureField`；改动立即写入 app 设置并广播给同 app 的其他窗口。
 - 由 app 菜单的“设置… ⌘,”打开，manifest 里 `settings: true` 才有。
 
@@ -90,9 +90,9 @@ run(<Main />, (
 | `ToolbarGroup` `Search` | 工具栏胶囊、搜索框 | `Search`：`value` `placeholder` `onInput` |
 | `Button` `Menu` | 按钮、弹出菜单 | `title` `symbol` `role` `prominent` `disabled` `help` `onAction` |
 | `List` `Section` `Row` | 列表（上下键选择） | `selection` `onSelect`；`Row`：`value` `title` `subtitle` `symbol` `badge` `selected` |
-| `SidebarTiles` `Tile` | 卡片侧栏 | `title` `symbol` `count` `tint` `onAction` |
+| `SidebarTiles` `Tile` | 卡片侧栏 | `title` `symbol` `count` `tint` `selected` `onAction` |
 | `Text` `Stack` `Spacer` `Divider` `Empty` | 内容 | `Text`：`style` `selectable`；`Stack`：`axis` `spacing`（tight/regular/loose） |
-| `Settings` `Pane` `Toggle` `Picker` `TextField` `SecureField` | 设置窗口 | `value` `onChange` |
+| `Settings` `Pane` `Toggle` `Picker` `TextField` `SecureField` | 设置窗口 | `value` `placeholder` `onChange` |
 | `useCommands` | 菜单栏命令（hook，不是组件） | `{id, menu, title, shortcut, run}` |
 
 新增组件的流程：先在这张表加一行 → `ui/src/components.tsx` 和 `ui/src/style.css` → 示例或测试用到。没有 app 用到的组件不加；不需要改 Swift。`Markdown` `Scroll` `Composer` `Sheet` `Popover` `ListDetail` 等 M1 起随 Agent 加入。

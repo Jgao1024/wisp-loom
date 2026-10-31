@@ -5,12 +5,17 @@
 #
 # Usage: scripts/shot.sh <app-id> <shot-name> [--settings] [--title TEXT] [--dark|--light]
 #                                  [--owner TEXT] [--no-build] [--delay SECONDS]
+#                                  [--click X,Y] [--type TEXT] [--key NAME]
 # Output: build/shots/<shot-name>.png
+#
+# --click / --type / --key drive the page before the capture (coordinates are window-relative points), which is
+# how the selected-row and settings-tab shots are taken. --delay waits after the window appears; actions run
+# in the order given, then the capture follows after a short settle.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 usage() {
-    echo "usage: scripts/shot.sh <app-id> <shot-name> [--settings] [--title TEXT] [--dark|--light] [--owner TEXT] [--no-build] [--delay SECONDS]" >&2
+    echo "usage: scripts/shot.sh <app-id> <shot-name> [--settings] [--title TEXT] [--dark|--light] [--owner TEXT] [--no-build] [--delay SECONDS] [--click X,Y] [--type TEXT] [--key NAME]" >&2
     exit 2
 }
 
@@ -26,6 +31,7 @@ title=""
 do_build=1
 delay=1.0
 app_path=${WISP_APP:-build/DerivedData/Build/Products/Debug/WispLoom.app}
+actions=()
 while [ $# -gt 0 ]; do
     case $1 in
         --settings) settings=1 ;;
@@ -35,24 +41,49 @@ while [ $# -gt 0 ]; do
         --owner) owner=${2:-}; shift ;;
         --no-build) do_build=0 ;;
         --delay) delay=${2:-}; shift ;;
+        --click) actions+=("click ${2:-}"); shift ;;
+        --type) actions+=("type ${2:-}"); shift ;;
+        --key) actions+=("key ${2:-}"); shift ;;
         *) echo "shot.sh: unknown option $1" >&2; exit 2 ;;
     esac
     shift
 done
 
+app_path=$(cd "$(dirname "$app_path")" 2>/dev/null && pwd)/$(basename "$app_path")
 bin=$app_path/Contents/MacOS/WispLoom
 [ -x "$bin" ] || { echo "shot.sh: $bin is missing; run make build first" >&2; exit 1; }
+bundle_id=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$app_path/Contents/Info.plist" 2>/dev/null || echo com.example.wisploom)
 mkdir -p build/shots build/tools
 
-helper=build/tools/window-id
-if [ ! -x "$helper" ] || [ scripts/window-id.swift -nt "$helper" ]; then
-    swiftc -O -module-cache-path build/tmp/modulecache -o "$helper" scripts/window-id.swift
+window_helper=build/tools/window-id
+if [ ! -x "$window_helper" ] || [ scripts/window-id.swift -nt "$window_helper" ]; then
+    swiftc -O -module-cache-path build/tmp/modulecache -o "$window_helper" scripts/window-id.swift
+fi
+event_helper=build/tools/ui-event
+if [ ! -x "$event_helper" ] || [ scripts/ui-event.swift -nt "$event_helper" ]; then
+    swiftc -O -module-cache-path build/tmp/modulecache -o "$event_helper" scripts/ui-event.swift
 fi
 
 shot=build/shots/$name.png
 log=build/shots/$name.log
 pid=0
 original_appearance=$(defaults read -g AppleInterfaceStyle 2>/dev/null || true)
+
+set_dark_mode() {
+    osascript -e "tell application \"System Events\" to tell appearance preferences to set dark mode to $1" >/dev/null 2>&1 || true
+}
+
+# The app reads the appearance when it launches, so wait until the preference actually flipped.
+wait_for_appearance() {
+    for _ in $(seq 1 30); do
+        current=$(defaults read -g AppleInterfaceStyle 2>/dev/null || true)
+        if [ "$1" = dark ] && [ "$current" = Dark ]; then sleep 2; return 0; fi
+        if [ "$1" = light ] && [ -z "$current" ]; then sleep 2; return 0; fi
+        sleep 0.1
+    done
+    echo "shot.sh: could not switch to $1 appearance" >&2
+    return 1
+}
 
 cleanup() {
     if [ "$pid" != 0 ]; then
@@ -62,9 +93,9 @@ cleanup() {
         wait "$pid" 2>/dev/null || true
     fi
     if [ "$appearance" = dark ] && [ "$original_appearance" != Dark ]; then
-        defaults delete -g AppleInterfaceStyle 2>/dev/null || true
+        set_dark_mode false
     elif [ "$appearance" = light ] && [ "$original_appearance" = Dark ]; then
-        defaults write -g AppleInterfaceStyle -string Dark
+        set_dark_mode true
     fi
 }
 trap cleanup EXIT
@@ -74,8 +105,8 @@ if [ "$do_build" = 1 ]; then
 fi
 
 case $appearance in
-    dark) defaults write -g AppleInterfaceStyle -string Dark ;;
-    light) defaults delete -g AppleInterfaceStyle 2>/dev/null || true ;;
+    dark) set_dark_mode true; wait_for_appearance dark ;;
+    light) set_dark_mode false; wait_for_appearance light ;;
 esac
 
 env_args=(WISP_APPS="$PWD/build/apps" WISP_OPEN="$app_id")
@@ -93,7 +124,7 @@ for _ in $(seq 1 100); do
         tail -20 "$log" >&2 || true
         exit 1
     fi
-    window=$("$helper" "${find_args[@]}" 2>/dev/null || true)
+    window=$("$window_helper" "${find_args[@]}" 2>/dev/null || true)
     [ -n "$window" ] && break
     sleep 0.1
 done
@@ -105,9 +136,44 @@ done
 
 # The window is up but WebKit may still be painting the first frame.
 sleep "$delay"
-window=$("$helper" "${find_args[@]}" 2>/dev/null || true)
+# A script-launched app is not guaranteed to be frontmost, and an inactive window swallows the first click.
+# Activate it, then click the empty sidebar strip left of the content (right of the traffic lights) so the
+# window is key before the real actions; on settings windows that point is the native titlebar.
+"$event_helper" activate "$bundle_id"
+sleep 0.2
+window=$("$window_helper" "${find_args[@]}" 2>/dev/null || true)
+[ -n "$window" ] || { echo "shot.sh: window disappeared before activation" >&2; exit 1; }
+IFS=$'\t' read -r _ window_x window_y _ _ _ <<<"$window"
+"$event_helper" click $((window_x + 120)) $((window_y + 16))
+sleep 0.3
+
+if [ ${#actions[@]} -gt 0 ]; then
+    window=$("$window_helper" "${find_args[@]}" 2>/dev/null || true)
+    [ -n "$window" ] || { echo "shot.sh: window disappeared before the actions" >&2; exit 1; }
+    IFS=$'\t' read -r _ window_x window_y _ _ _ <<<"$window"
+    for action in "${actions[@]}"; do
+        kind=${action%% *}
+        value=${action#* }
+        case $kind in
+            click)
+                x=${value%%,*}
+                y=${value#*,}
+                "$event_helper" click $((window_x + x)) $((window_y + y))
+                ;;
+            type) "$event_helper" type "$value" ;;
+            key) "$event_helper" key "$value" ;;
+        esac
+        sleep 0.3
+    done
+    sleep 0.4
+fi
+
+window=$("$window_helper" "${find_args[@]}" 2>/dev/null || true)
 [ -n "$window" ] || { echo "shot.sh: window disappeared before capture" >&2; exit 1; }
-window_id=${window%%$'\t'*}
+IFS=$'\t' read -r window_id window_x window_y window_width window_height _ <<<"$window"
+# Park the pointer outside the window: hovering the close button or a row would show up in the image.
+"$event_helper" away "$window_x" "$window_y" "$window_width" "$window_height"
+sleep 0.2
 
 if ! capture_error=$(screencapture -x -o -l "$window_id" "$shot" 2>&1); then
     echo "shot.sh: screencapture failed: $capture_error" >&2

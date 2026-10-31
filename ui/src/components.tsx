@@ -25,20 +25,26 @@ export function Window({ title, subtitle, columns, children }: { title: string; 
 
 type ColumnProps = { title?: string; subtitle?: string; toolbar?: ComponentChildren } & Kids;
 
+/** The empty parts of a titlebar drag the window; buttons and fields keep their own clicks. Every column has
+ *  one, including the sidebar, so the whole top strip (where the traffic lights sit) behaves like a titlebar. */
 function Column({ kind, title, subtitle, toolbar, children }: { kind: string } & ColumnProps) {
+  const interactive = (target: EventTarget | null) =>
+    target instanceof Element && !!target.closest("button, input, select, textarea, .menu");
   return (
     <section class={cx("column", kind)}>
-      {kind !== "sidebar" && (
-        <header class="titlebar" onDblClick={() => post({ type: "zoom" })} onMouseDown={(e) => e.target === e.currentTarget && post({ type: "drag" })}>
-          {title !== undefined && (
-            <div class="heading">
-              <h1 class="text headline">{title}</h1>
-              {subtitle && <span class="subtitle">{subtitle}</span>}
-            </div>
-          )}
-          {toolbar}
-        </header>
-      )}
+      <header
+        class="titlebar"
+        onMouseDown={(e) => !interactive(e.target) && e.detail < 2 && post({ type: "drag" })}
+        onDblClick={(e) => !interactive(e.target) && post({ type: "zoom" })}
+      >
+        {title !== undefined && (
+          <div class="heading">
+            <h1 class="text headline">{title}</h1>
+            {subtitle && <span class="subtitle">{subtitle}</span>}
+          </div>
+        )}
+        {toolbar}
+      </header>
       {children}
     </section>
   );
@@ -52,7 +58,12 @@ export const Detail = (p: ColumnProps) => <Column kind="detail" {...p} />;
 export const ToolbarGroup = ({ children }: Kids) => <div class="group">{children}</div>;
 
 export function Search({ value, placeholder, onInput }: { value: string; placeholder?: string; onInput: (text: string) => void }) {
-  return <input class="search" type="search" value={value} placeholder={placeholder} onInput={(e) => onInput(e.currentTarget.value)} />;
+  return (
+    <label class="search">
+      <Icon symbol="magnifyingglass" />
+      <input type="search" value={value} placeholder={placeholder} onInput={(e) => onInput(e.currentTarget.value)} />
+    </label>
+  );
 }
 
 // ---- Controls -----------------------------------------------------------------------------
@@ -137,7 +148,7 @@ export function List({ selection, onSelect, children }: { selection?: string | n
 export const Section = ({ title, children }: { title?: string } & Kids) => (
   <div class="section">
     {title && <div class="section-title">{title}</div>}
-    {children}
+    <div class="section-body">{children}</div>
   </div>
 );
 
@@ -158,11 +169,13 @@ export function Row({ value, title, subtitle, symbol, badge, selected }: {
 
 export const SidebarTiles = ({ children }: Kids) => <div class="tiles">{children}</div>;
 
-export function Tile({ title, symbol, count, tint = "accent", onAction }: { title: string; symbol: string; count?: number; tint?: Tint; onAction?: () => void }) {
+export function Tile({ title, symbol, count, tint = "accent", selected, onAction }: {
+  title: string; symbol: string; count?: number; tint?: Tint; selected?: boolean; onAction?: () => void;
+}) {
   return (
-    <button class="tile" onClick={onAction}>
+    <button class={cx("tile", selected && "selected")} aria-pressed={selected} onClick={onAction}>
       <span class="top">
-        <span style={{ color: `var(--tint-${tint})` } as never}><Icon symbol={symbol} /></span>
+        <span class={cx("tile-icon", `tint-${tint}`)}><Icon symbol={symbol} /></span>
         {count !== undefined && <span class="count">{count}</span>}
       </span>
       <span class="name">{title}</span>
@@ -216,11 +229,15 @@ const Field = ({ title, children }: { title: string } & Kids) => (
 export const Toggle = ({ title, value, onChange }: { title: string; value: boolean; onChange: (v: boolean) => void }) => (
   <Field title={title}><input class="switch" type="checkbox" checked={value} onChange={(e) => onChange(e.currentTarget.checked)} /></Field>
 );
-export const TextField = ({ title, value, onChange }: { title: string; value: string; onChange: (v: string) => void }) => (
-  <Field title={title}><input type="text" value={value} onInput={(e) => onChange(e.currentTarget.value)} /></Field>
+export const TextField = ({ title, value, placeholder, onChange }: {
+  title: string; value: string; placeholder?: string; onChange: (v: string) => void;
+}) => (
+  <Field title={title}><input type="text" value={value} placeholder={placeholder} onInput={(e) => onChange(e.currentTarget.value)} /></Field>
 );
-export const SecureField = ({ title, value, onChange }: { title: string; value?: string; onChange: (v: string) => void }) => (
-  <Field title={title}><input type="password" value={value ?? ""} onInput={(e) => onChange(e.currentTarget.value)} /></Field>
+export const SecureField = ({ title, value, placeholder, onChange }: {
+  title: string; value?: string; placeholder?: string; onChange: (v: string) => void;
+}) => (
+  <Field title={title}><input type="password" value={value ?? ""} placeholder={placeholder} onInput={(e) => onChange(e.currentTarget.value)} /></Field>
 );
 export const Picker = ({ title, value, options, onChange }: { title: string; value: string; options: { value: string; title: string }[]; onChange: (v: string) => void }) => (
   <Field title={title}>
@@ -234,5 +251,6 @@ export { openSettings };
 
 /** Renders the app into the page; the settings window loads the same bundle and shows `settings` instead. */
 export function run(app: VNode, settings?: VNode): void {
+  document.body.dataset.window = boot.window;
   mount(boot.window === "settings" && settings ? settings : app, document.body);
 }

@@ -61,8 +61,8 @@ function Sample() {
     <Window title={name || "Sample"} columns={3}>
       <Sidebar>
         <SidebarTiles>
-          <Tile title="All" symbol="tray.full" tint="blue" count={items.length} onAction={() => setGroup(null)} />
-          <Tile title="Inbox" symbol="tray" tint="orange" count={count("Inbox")} onAction={() => setGroup("Inbox")} />
+          <Tile title="All" symbol="tray.full" tint="blue" count={items.length} selected={group === null} onAction={() => setGroup(null)} />
+          <Tile title="Inbox" symbol="tray" tint="orange" count={count("Inbox")} selected={group === "Inbox"} onAction={() => setGroup("Inbox")} />
         </SidebarTiles>
         <List selection={group} onSelect={(value) => setGroup(value as Item["group"])}>
           <Section title="Groups">
@@ -75,15 +75,13 @@ function Sample() {
         title={group ?? "All"}
         subtitle={`${shown.length} items`}
         toolbar={
-          <>
+          <ToolbarGroup>
             <Menu symbol="arrow.up.arrow.down">
               <Button title="Title A–Z" onAction={() => setAscending(true)} />
               <Button title="Title Z–A" onAction={() => setAscending(false)} />
             </Menu>
-            <ToolbarGroup>
-              <Button symbol="plus" help="New item" onAction={add} />
-            </ToolbarGroup>
-          </>
+            <Button symbol="plus" help="New item" onAction={add} />
+          </ToolbarGroup>
         }
       >
         <List selection={selected} onSelect={setSelected}>
@@ -130,7 +128,7 @@ function SampleSettings() {
       </Pane>
       <Pane id="account" title="Account" symbol="key">
         <Section title="Backend">
-          <SecureField title="API key" value={apiKey} onChange={(v) => { setApiKey(v); void setSecret("apiKey", v); }} />
+          <SecureField title="API key" placeholder="sk-…" value={apiKey} onChange={(v) => { setApiKey(v); void setSecret("apiKey", v); }} />
         </Section>
       </Pane>
     </Settings>
