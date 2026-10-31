@@ -41,9 +41,19 @@ public final class WindowFactory {
         return window
     }
 
-    public func makeSettingsWindow(content: NSViewController) -> NSWindow {
-        let window = NSWindow(contentViewController: content)
+    public func makeSettingsWindow(panes: [SettingsPane]) -> NSWindow {
+        let tabs = SettingsTabController()
+        tabs.tabStyle = .toolbar
+        for pane in panes {
+            let item = NSTabViewItem(viewController: pane.content)
+            item.label = pane.title
+            item.identifier = pane.id
+            item.image = NSImage(systemSymbolName: pane.symbol, accessibilityDescription: pane.title)
+            tabs.addTabViewItem(item)
+        }
+        let window = NSWindow(contentViewController: tabs)
         window.styleMask = [.titled, .closable]
+        window.title = panes.first?.title ?? ""
         window.isReleasedWhenClosed = false
         window.center()
         return window

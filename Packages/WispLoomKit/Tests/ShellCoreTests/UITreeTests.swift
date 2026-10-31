@@ -147,3 +147,26 @@ struct UITreeTests {
         #expect(tree.nodes(ofType: "Text").map(\.id) == ["a", "b"])
     }
 }
+
+@MainActor
+struct UITreeMenuTests {
+    @Test func collectsCommandsAndSettings() throws {
+        let tree = UITree()
+        try tree.apply(
+            Fixtures.patch(
+                """
+                {"rev":1,"ops":[{"op":"replace","node":{"id":"r","type":"App","children":[
+                  {"id":"w","type":"Window","children":[
+                    {"id":"c1","type":"Command","props":{"menu":"file","title":"New","shortcut":"cmd+n","onAction":"h1"}},
+                    {"id":"c2","type":"Command","props":{"menu":"view","title":"Off","disabled":true}},
+                    {"id":"bad","type":"Command","props":{"menu":"file"}}]},
+                  {"id":"s","type":"Settings"}]}}]}
+                """))
+        let commands = tree.commands
+        #expect(commands.map(\.title) == ["New", "Off"])
+        #expect(commands[0].shortcut == Shortcut("cmd+n"))
+        #expect(commands[0].handler == "h1")
+        #expect(!commands[1].isEnabled)
+        #expect(tree.hasSettings)
+    }
+}

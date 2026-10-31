@@ -10,6 +10,7 @@ import SwiftUI
 final class CompositionRoot {
     private let controller: ShellController
     private let registry: AppRegistry
+    private let menus: MenuCoordinator
     private var statusItem: StatusItemController?
 
     init() {
@@ -29,16 +30,25 @@ final class CompositionRoot {
         let send: (ShellAction) -> Void = { [weak controller] in controller?.dispatch($0) }
 
         windows.contentProvider = { registry.makeContent(for: $0) }
+        windows.settingsProvider = { registry.settingsPanes(for: $0) }
         windows.windowDidClose = { registry.windowClosed($0) }
         presenter.launcherContent = { NSHostingController(rootView: LauncherView(state: state, send: send)) }
-        presenter.settingsContent = { NSHostingController(rootView: SettingsView(state: state, send: send)) }
+        presenter.settingsPanes = {
+            [
+                SettingsPane(
+                    id: "general", title: state.language.string("General"), symbol: "gearshape",
+                    content: NSHostingController(rootView: SettingsView(state: state, send: send)))
+            ]
+        }
         controller.setApps(registry.load(from: Self.appRoots))
         self.controller = controller
         self.registry = registry
+        menus = MenuCoordinator(state: state, registry: registry, send: send)
     }
 
     func start() {
         controller.start()
+        menus.start()
         statusItem = StatusItemController(
             symbolName: "circle.hexagongrid.fill",
             onClick: { [controller] in controller.dispatch(.toggleLauncher) },

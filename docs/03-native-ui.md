@@ -55,6 +55,7 @@
 | 显示 | 显示/隐藏侧栏 ⌃⌘S、进入全屏 + app 命令 | 壳 + app |
 | 窗口 / 帮助 | 系统标准 | 壳 |
 
+- app 菜单的“设置…”只在 app 声明了 `<Settings>` 时出现；没有 key 窗口（只有浮窗）时菜单栏是 “Wisp Loom” 的壳菜单。
 - app 命令在 TS 里用 `<Command menu="file" title="新建对话" shortcut="cmd+n" onAction={…}/>` 声明，同一个命令也可以放进工具栏。
 - 风险：菜单栏粗体名称系统取进程名，可能始终显示 “Wisp Loom”，M1 实测后决定是否接受。
 

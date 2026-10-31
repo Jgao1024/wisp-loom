@@ -28,4 +28,15 @@ struct ShellStateTests {
         state.apply(.closed(first.id))
         #expect(state.window(for: "a") == nil)
     }
+
+    @Test func activeAppFollowsKeyWindow() {
+        let state = ShellState(apps: [])
+        let other = WindowInstance(appID: "b")
+        state.apply(.opened(first))
+        state.apply(.opened(other))
+        state.apply(.focused(other.id))
+        #expect(state.activeAppID == "b")
+        state.apply(.closed(other.id))
+        #expect(state.activeAppID == "a")
+    }
 }

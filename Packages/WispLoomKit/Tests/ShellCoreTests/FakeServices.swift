@@ -6,12 +6,16 @@ final class FakeWindowManager: WindowManaging {
     private let continuation: AsyncStream<WindowEvent>.Continuation
 
     private(set) var opened: [AppID] = []
+    private(set) var settingsOpened: [AppID] = []
+    private(set) var closedApps: [AppID] = []
     private(set) var focused: [WindowID] = []
     private(set) var didCloseAll = false
 
     init() { (events, continuation) = AsyncStream.makeStream() }
 
     func openWindow(for app: AppDescriptor) { opened.append(app.id) }
+    func openSettingsWindow(for app: AppDescriptor) { settingsOpened.append(app.id) }
+    func closeWindows(of appID: AppID) { closedApps.append(appID) }
     func focusWindow(_ id: WindowID) { focused.append(id) }
     func closeAllWindows() { didCloseAll = true }
 

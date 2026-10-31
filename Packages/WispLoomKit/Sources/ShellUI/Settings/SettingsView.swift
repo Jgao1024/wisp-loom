@@ -25,9 +25,8 @@ public struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 420)
+        .frame(width: SettingsMetrics.paneWidth)
         .fixedSize(horizontal: false, vertical: true)
-        .navigationTitle("Settings")
         .environment(\.locale, state.language.locale)
     }
 }

@@ -4,7 +4,7 @@ import ShellCore
 @MainActor
 public final class ShellPresenter: NSObject, ShellPresenting, NSWindowDelegate {
     public var launcherContent: (() -> NSViewController)?
-    public var settingsContent: (() -> NSViewController)?
+    public var settingsPanes: (() -> [SettingsPane])?
 
     private let factory: WindowFactory
     private var launcher: NSPanel?
@@ -32,8 +32,8 @@ public final class ShellPresenter: NSObject, ShellPresenting, NSWindowDelegate {
     }
 
     public func showSettings() {
-        if settings == nil, let content = settingsContent?() {
-            settings = factory.makeSettingsWindow(content: content)
+        if settings == nil, let panes = settingsPanes?(), !panes.isEmpty {
+            settings = factory.makeSettingsWindow(panes: panes)
         }
         NSApp.activate()
         settings?.makeKeyAndOrderFront(nil)

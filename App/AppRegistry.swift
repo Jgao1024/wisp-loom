@@ -1,6 +1,7 @@
 import AppKit
 import AppRuntime
 import ShellCore
+import ShellPlatform
 import ShellUI
 import SwiftUI
 
@@ -39,6 +40,25 @@ final class AppRegistry {
     }
 
     func windowClosed(_ id: AppID) { sessions[id]?.release() }
+
+    func tree(for id: AppID) -> UITree? { sessions[id]?.tree }
+
+    func dispatch(_ id: AppID, handler: String) { sessions[id]?.dispatch(handler: handler, value: nil) }
+
+    /// Panes the app declared with `<Settings>`. The settings window keeps the app running like any other
+    /// window does, so it takes a reference only when it will really open.
+    func settingsPanes(for app: AppDescriptor) -> [SettingsPane] {
+        guard let session = sessions[app.id] else { return [] }
+        let nodes = session.tree.nodes(ofType: "Pane")
+        guard !nodes.isEmpty else { return [] }
+        session.retain()
+        let events = UIEvents { [weak session] handler, value in session?.dispatch(handler: handler, value: value) }
+        return nodes.map { node in
+            SettingsPane(
+                id: node.id, title: node.string("title") ?? "", symbol: node.string("symbol") ?? "gearshape",
+                content: NSHostingController(rootView: PaneView(node: node, state: state, events: events)))
+        }
+    }
 
     private func session(for id: AppID) -> AppSession? {
         if let existing = sessions[id] { return existing }

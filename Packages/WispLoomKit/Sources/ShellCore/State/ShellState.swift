@@ -21,10 +21,13 @@ public final class ShellState {
 
     public func app(for appID: AppID) -> AppDescriptor? { apps.first { $0.id == appID } }
 
-    public func window(for appID: AppID) -> WindowInstance? {
-        let candidates = windows.filter { $0.appID == appID }
+    public func window(for appID: AppID, kind: WindowInstance.Kind = .main) -> WindowInstance? {
+        let candidates = windows.filter { $0.appID == appID && $0.kind == kind }
         return candidates.first(where: \.isKey) ?? candidates.last
     }
+
+    /// The app the menu bar should show: the key window's, else the most recent one's.
+    public var activeAppID: AppID? { (windows.first(where: \.isKey) ?? windows.last)?.appID }
 
     func apply(_ event: WindowEvent) {
         switch event {

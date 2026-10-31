@@ -7,3 +7,27 @@
 "Language" = "语言";
 "Launcher style" = "浮窗样式";
 "Grid" = "网格";
+
+"General" = "通用";
+"About" = "关于";
+"Services" = "服务";
+"Hide" = "隐藏";
+"Hide Others" = "隐藏其他";
+"Show All" = "全部显示";
+"File" = "文件";
+"Close Window" = "关闭窗口";
+"Edit" = "编辑";
+"Undo" = "撤销";
+"Redo" = "重做";
+"Cut" = "剪切";
+"Copy" = "拷贝";
+"Paste" = "粘贴";
+"Select All" = "全选";
+"Find…" = "查找…";
+"View" = "显示";
+"Toggle Sidebar" = "显示/隐藏侧栏";
+"Enter Full Screen" = "进入全屏";
+"Window" = "窗口";
+"Minimize" = "最小化";
+"Zoom" = "缩放";
+"Help" = "帮助";

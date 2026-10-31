@@ -22,6 +22,16 @@ struct NodeView: View {
         case "Section": SectionNode(node: node)
         case "Row": RowNode(node: node)
         case "SidebarTiles": TilesNode(node: node)
+        case "Toggle": ToggleNode(node: node)
+        case "Picker": PickerNode(node: node)
+        case "TextField":
+            SyncedText(node: node, prop: "value", event: "onChange") {
+                TextField(node.string("title") ?? "", text: $0)
+            }
+        case "SecureField":
+            SyncedText(node: node, prop: "value", event: "onChange") {
+                SecureField(node.string("title") ?? "", text: $0)
+            }
         default: EmptyView()  // Command, Settings and toolbar items are consumed by their parents
         }
     }
@@ -340,5 +350,45 @@ struct TileNode: View {
             .background(.quaternary, in: RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Form controls
+
+struct ToggleNode: View {
+    let node: UINode
+    @Environment(\.uiEvents) private var events
+
+    var body: some View {
+        Toggle(
+            node.string("title") ?? "",
+            isOn: Binding(
+                get: { node.bool("value") },
+                set: { events.send(node.handler("onChange"), .bool($0)) }))
+    }
+}
+
+struct PickerNode: View {
+    let node: UINode
+    @Environment(\.uiEvents) private var events
+
+    private var options: [(value: String, title: String)] {
+        var result: [(String, String)] = []
+        for option in node.props["options"]?.arrayValue ?? [] {
+            guard let fields = option.objectValue, let value = fields["value"]?.stringValue else { continue }
+            result.append((value, fields["title"]?.stringValue ?? value))
+        }
+        return result
+    }
+
+    var body: some View {
+        Picker(
+            node.string("title") ?? "",
+            selection: Binding(
+                get: { node.string("value") ?? "" },
+                set: { events.send(node.handler("onChange"), .string($0)) })
+        ) {
+            ForEach(options, id: \.value) { Text(verbatim: $0.title).tag($0.value) }
+        }
     }
 }

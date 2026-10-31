@@ -101,4 +101,24 @@ struct ShellControllerTests {
         for _ in 0..<200 where h.state.windows.isEmpty { try await Task.sleep(for: .milliseconds(5)) }
         #expect(h.state.windows == [window])
     }
+
+    @Test func openAppSettingsOpensOnceThenFocuses() {
+        let h = ControllerHarness()
+        h.controller.dispatch(.openAppSettings(h.notes.id))
+        #expect(h.windows.settingsOpened == [h.notes.id])
+        // A main window alone must not count as the settings window.
+        h.state.apply(.opened(WindowInstance(appID: h.notes.id)))
+        h.controller.dispatch(.openAppSettings(h.notes.id))
+        #expect(h.windows.settingsOpened.count == 2)
+        let settings = WindowInstance(appID: h.notes.id, kind: .settings)
+        h.state.apply(.opened(settings))
+        h.controller.dispatch(.openAppSettings(h.notes.id))
+        #expect(h.windows.focused == [settings.id])
+    }
+
+    @Test func closeAppClosesOnlyThatApp() {
+        let h = ControllerHarness()
+        h.controller.dispatch(.closeApp(h.notes.id))
+        #expect(h.windows.closedApps == [h.notes.id])
+    }
 }

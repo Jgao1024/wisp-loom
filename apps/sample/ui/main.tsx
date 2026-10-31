@@ -1,6 +1,7 @@
 import {
-  Button, Content, Detail, Divider, Empty, List, Menu, Row, Section, Sidebar, SidebarTiles, Split, Stack, Text,
-  Tile, Toolbar, ToolbarGroup, Window, call, mount, useMemo, useState, useStream,
+  Button, Command, Content, Detail, Divider, Empty, List, Menu, Pane, Row, Section, SecureField, Settings, Sidebar,
+  SidebarTiles, Split, Stack, Text, TextField, Tile, Toggle, Toolbar, ToolbarGroup, Window, call, mount, setSecret,
+  setSetting, setting, useMemo, useState, useStream,
 } from "@wisp/ui";
 
 interface Item {
@@ -15,7 +16,22 @@ const initial: Item[] = [
   { id: "3", title: "Ship milestone 0", group: "Archive" },
 ];
 
+/** A setting backed by the shell's per-app store. */
+function usePersisted<T>(key: string, fallback: T): [T, (value: T) => void] {
+  const [value, setValue] = useState(() => setting(key, fallback));
+  return [
+    value,
+    (next) => {
+      setSetting(key, next);
+      setValue(next);
+    },
+  ];
+}
+
 function Sample() {
+  const [showGroups, setShowGroups] = usePersisted("showGroups", true);
+  const [name, setName] = usePersisted("name", "Sample");
+  const [apiKey, setApiKey] = useState("");
   const [items, setItems] = useState(initial);
   const [group, setGroup] = useState<Item["group"] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -53,7 +69,9 @@ function Sample() {
   };
 
   return (
-    <Window title="Sample">
+    <>
+    <Window title={name || "Sample"}>
+      <Command menu="file" title="New Item" shortcut="cmd+n" onAction={add} />
       <Split columns={3} query={query} placeholder="Search" onQuery={setQuery}>
         <Sidebar>
           <SidebarTiles>
@@ -82,7 +100,7 @@ function Sample() {
           </Toolbar>
           <List selection={selected} onSelect={setSelected}>
             {shown.map((item) => (
-              <Row key={item.id} value={item.id} title={item.title} subtitle={item.group} />
+              <Row key={item.id} value={item.id} title={item.title} subtitle={showGroups ? item.group : undefined} />
             ))}
           </List>
         </Content>
@@ -104,6 +122,25 @@ function Sample() {
         </Detail>
       </Split>
     </Window>
+    <Settings>
+      <Pane id="general" title="General" symbol="gearshape">
+        <Section title="Window">
+          <TextField title="Title" value={name} onChange={setName} />
+          <Toggle title="Show group under each item" value={showGroups} onChange={setShowGroups} />
+        </Section>
+        <Section title="Account">
+          <SecureField
+            title="API key"
+            value={apiKey}
+            onChange={(value) => {
+              setApiKey(value);
+              void setSecret("apiKey", value);
+            }}
+          />
+        </Section>
+      </Pane>
+    </Settings>
+    </>
   );
 }
 
