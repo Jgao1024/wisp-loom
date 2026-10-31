@@ -26,3 +26,26 @@ public enum AppCatalog {
         return found
     }
 }
+
+/// What a changed file means for a running app (dev-time hot reload, docs/02-app-protocol.md §4).
+public enum AppChange: Hashable, Sendable {
+    case script(AppID)
+    case backend(AppID)
+    /// Any manifest: the catalog is rescanned, which also picks up new or removed apps.
+    case manifest
+}
+
+extension AppCatalog {
+    /// `path` must be a real path (FSEvents reports those); bundle directories are resolved here.
+    public static func change(at path: String, in bundles: [AppBundle]) -> AppChange? {
+        if path.hasSuffix("/manifest.json") { return .manifest }
+        for bundle in bundles {
+            let directory = bundle.directory.resolvingSymlinksInPath().path + "/"
+            guard path.hasPrefix(directory) else { continue }
+            let relative = String(path.dropFirst(directory.count))
+            if relative == bundle.manifest.ui { return .script(bundle.manifest.id) }
+            if relative.hasPrefix("backend/") { return .backend(bundle.manifest.id) }
+        }
+        return nil
+    }
+}

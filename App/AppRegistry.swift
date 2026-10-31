@@ -28,7 +28,17 @@ final class AppRegistry {
 
     func load(from roots: [URL]) -> [AppDescriptor] {
         bundles = AppCatalog.scan(roots, log: log)
+        for bundle in bundles { sessions[bundle.manifest.id]?.update(bundle) }
         return descriptors(for: state.language)
+    }
+
+    /// Dev-time reload of one running app; apps without a session pick the change up when they start.
+    func apply(_ change: AppChange) {
+        switch change {
+        case .script(let id): sessions[id]?.reloadScript()
+        case .backend(let id): sessions[id]?.restartBackend()
+        case .manifest: break
+        }
     }
 
     /// Window content for an app; the first window starts the app.

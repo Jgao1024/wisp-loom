@@ -11,6 +11,7 @@ final class CompositionRoot {
     private let controller: ShellController
     private let registry: AppRegistry
     private let menus: MenuCoordinator
+    private var hotReloader: HotReloader?
     private var statusItem: StatusItemController?
 
     init() {
@@ -29,6 +30,7 @@ final class CompositionRoot {
             onQuit: { NSApp.terminate(nil) })
         let send: (ShellAction) -> Void = { [weak controller] in controller?.dispatch($0) }
 
+        var hotReloader: HotReloader?
         windows.contentProvider = { registry.makeContent(for: $0) }
         windows.settingsProvider = { registry.settingsPanes(for: $0) }
         windows.windowDidClose = { registry.windowClosed($0) }
@@ -41,8 +43,14 @@ final class CompositionRoot {
             ]
         }
         controller.setApps(registry.load(from: Self.appRoots))
+        if let override = ProcessInfo.processInfo.environment["WISP_APPS"] {
+            hotReloader = HotReloader(root: URL(fileURLWithPath: override), registry: registry) { [weak controller] in
+                controller?.setApps(registry.load(from: Self.appRoots))
+            }
+        }
         self.controller = controller
         self.registry = registry
+        self.hotReloader = hotReloader
         menus = MenuCoordinator(state: state, registry: registry, send: send)
     }
 

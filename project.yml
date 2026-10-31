@@ -32,8 +32,18 @@ targets:
         NSHighResolutionCapable: true
         LSUIElement: true
         CFBundleDisplayName: Wisp Loom
+    preBuildScripts:
+      - name: Copy apps
+        script: |
+          # Built-in apps come from `make apps`; the bundle gets whatever build/apps holds.
+          mkdir -p "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Apps"
+          if [ -d "$SRCROOT/build/apps" ]; then
+            rsync -a --delete "$SRCROOT/build/apps/" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Apps/"
+          fi
+        basedOnDependencyAnalysis: false
     settings:
       base:
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
         PRODUCT_BUNDLE_IDENTIFIER: com.example.wisploom
         ENABLE_HARDENED_RUNTIME: YES
         CODE_SIGN_IDENTITY: "-"

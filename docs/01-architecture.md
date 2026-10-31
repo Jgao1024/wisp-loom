@@ -80,6 +80,6 @@ sdk/rust/                 [Rust] wisp-backend：stdio JSON Lines 循环、请求
 Packages/WispLoomKit/     [Swift] 壳
 ```
 
-构建：`make apps` 把每个 app 编成 `build/apps/<name>/`（`ui.js` + 后端可执行文件 + manifest），再拷进 app bundle 的 `Resources/Apps`。
+构建：`make apps` 把每个 app 编成 `build/apps/<name>/`（`manifest.json`、`ui.js`、`backend/<可执行文件>`），`make build` 再把它同步进 app bundle 的 `Resources/Apps`。Rust 后端的 cargo workspace 在仓库根，产物统一在 `build/cargo`。
 
-加载顺序：bundle 内置 → `~/Library/Application Support/WispLoom/Apps/` → 设置里添加的目录。加载插件只改目录地址，不改源码。开发期用 `WISP_APPS=<repo>/build/apps` 覆盖，配合热重载。
+加载顺序：bundle 内置 → `~/Library/Application Support/WispLoom/Apps/` → 设置里添加的目录。加载插件只改目录地址，不改源码。开发期用 `WISP_APPS=<repo>/build/apps` 覆盖（替换整个列表），配合热重载：`make run` 注入该变量，`make dev` 额外让 esbuild 监听 tsx。

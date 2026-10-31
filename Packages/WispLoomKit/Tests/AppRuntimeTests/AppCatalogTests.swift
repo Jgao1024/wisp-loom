@@ -26,3 +26,21 @@ struct AppCatalogTests {
         #expect(bundles[0].directory.lastPathComponent == "one")
     }
 }
+
+struct AppChangeTests {
+    @Test func classifiesChangedFiles() throws {
+        let box = try Sandbox()
+        defer { box.remove() }
+        let manifest = try Manifest.decode(Data(#"{"id":"x.one","name":"One","symbol":"star","ui":"ui.js"}"#.utf8))
+        let directory = box.directory.appendingPathComponent("one")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let bundles = [AppBundle(directory: directory, manifest: manifest)]
+        let real = directory.resolvingSymlinksInPath().path
+
+        #expect(AppCatalog.change(at: real + "/ui.js", in: bundles) == .script("x.one"))
+        #expect(AppCatalog.change(at: real + "/backend/echo", in: bundles) == .backend("x.one"))
+        #expect(AppCatalog.change(at: real + "/manifest.json", in: bundles) == .manifest)
+        #expect(AppCatalog.change(at: real + "/notes.txt", in: bundles) == nil)
+        #expect(AppCatalog.change(at: "/elsewhere/ui.js", in: bundles) == nil)
+    }
+}

@@ -5,7 +5,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "node --test \"sdk/ts/test/*.test.ts\"",
-    "build:ui": "node scripts/build-ui.mjs"
+    "build:apps": "node scripts/build-apps.mjs"
   },
   "devDependencies": {
     "esbuild": "0.28.2",
