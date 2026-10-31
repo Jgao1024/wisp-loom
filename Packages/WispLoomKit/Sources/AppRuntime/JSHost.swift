@@ -91,7 +91,7 @@ public final class JSHost: @unchecked Sendable {
             [weak self] method, params, event, done in
             self?.startCall(method, params, event, done) ?? JSValue(undefinedIn: JSContext.current())
         }
-        let setting: @convention(block) (String) -> Any = { [services] key in services.setting(key) ?? NSNull() }
+        let setting: @convention(block) (String) -> String? = { [services] key in services.setting(key) }
         let setSetting: @convention(block) (String, String) -> Void = { [services] key, value in
             services.setSetting(key, value)
         }
@@ -156,7 +156,8 @@ public final class JSHost: @unchecked Sendable {
         nextCallID += 1
         calls[id] = (event, done)
         services.call(id, method, Data(params.utf8)) { [weak self] reply in
-            self?.queue.async { self?.deliver(reply, to: id) }
+            guard let host = self else { return }
+            host.queue.async { host.deliver(reply, to: id) }
         }
         let cancel: @convention(block) () -> Void = { [weak self] in
             if self?.calls[id] != nil { self?.services.cancel(id) }

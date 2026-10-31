@@ -1,0 +1,10 @@
+{
+  "id": "dev.wisp.sample",
+  "name": { "zh-Hans": "示例", "en": "Sample" },
+  "category": { "zh-Hans": "开发", "en": "Developer" },
+  "symbol": "sparkles",
+  "tint": "purple",
+  "ui": "ui.js",
+  "backend": { "exec": ["backend/echo"], "idle": 30 },
+  "window": { "size": [1100, 720], "min": [720, 480] }
+}

@@ -1,19 +1,23 @@
 import ShellCore
 import SwiftUI
 
-/// Stand-in window content until plugins render their own UI.
+/// Content of an app window: renders the app's UI tree with native controls.
 public struct AppWindowView: View {
-    private let app: AppDescriptor
+    let state: ShellState
+    let tree: UITree
+    let events: UIEvents
 
-    public init(app: AppDescriptor) { self.app = app }
+    public init(state: ShellState, tree: UITree, events: UIEvents) {
+        self.state = state
+        self.tree = tree
+        self.events = events
+    }
 
     public var body: some View {
-        ContentUnavailableView(app.name, systemImage: app.symbolName)
+        Group {
+            if let root = tree.root { NodeView(node: root) } else { ProgressView().controlSize(.small) }
+        }
+        .environment(\.uiEvents, events)
+        .environment(\.locale, state.language.locale)
     }
-}
-
-#Preview {
-    AppWindowView(
-        app: AppDescriptor(id: "preview", name: "Preview", symbolName: "star.fill", tint: .blue, category: "")
-    ).frame(width: 480, height: 320)
 }

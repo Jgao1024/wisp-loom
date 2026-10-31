@@ -23,7 +23,7 @@ targets:
     sources: [App]
     dependencies:
       - package: WispLoomKit
-        products: [ShellCore, ShellUI, ShellPlatform]
+        products: [ShellCore, ShellUI, ShellPlatform, AppRuntime]
     info:
       path: App/Info.plist
       properties:

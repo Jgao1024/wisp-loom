@@ -4,11 +4,13 @@ import ShellCore
 @MainActor
 public final class WindowManager: NSObject, WindowManaging, NSWindowDelegate {
     public let events: AsyncStream<WindowEvent>
-    public var contentProvider: ((AppDescriptor) -> NSViewController)?
+    public var contentProvider: ((AppDescriptor) -> NSViewController?)?
+    /// Called after each app window closes, so the owner can release what the window needed.
+    public var windowDidClose: ((AppID) -> Void)?
 
     private let continuation: AsyncStream<WindowEvent>.Continuation
     private let factory: WindowFactory
-    private var windows: [WindowID: NSWindow] = [:]
+    private var windows: [WindowID: (window: NSWindow, appID: AppID)] = [:]
 
     public init(factory: WindowFactory) {
         self.factory = factory
@@ -21,19 +23,19 @@ public final class WindowManager: NSObject, WindowManaging, NSWindowDelegate {
         let instance = WindowInstance(appID: app.id)
         let window = factory.makeAppWindow(for: app, content: content)
         window.delegate = self
-        windows[instance.id] = window
+        windows[instance.id] = (window, app.id)
         continuation.yield(.opened(instance))
         activate(window)
     }
 
     public func focusWindow(_ id: WindowID) {
-        guard let window = windows[id] else { return }
+        guard let window = windows[id]?.window else { return }
         if window.isMiniaturized { window.deminiaturize(nil) }
         activate(window)
     }
 
     public func closeAllWindows() {
-        for window in Array(windows.values) { window.close() }
+        for entry in Array(windows.values) { entry.window.close() }
     }
 
     public func windowDidBecomeKey(_ notification: Notification) {
@@ -41,9 +43,9 @@ public final class WindowManager: NSObject, WindowManaging, NSWindowDelegate {
     }
 
     public func windowWillClose(_ notification: Notification) {
-        guard let id = id(of: notification.object) else { return }
-        windows[id] = nil
+        guard let id = id(of: notification.object), let entry = windows.removeValue(forKey: id) else { return }
         continuation.yield(.closed(id))
+        windowDidClose?(entry.appID)
     }
 
     private func activate(_ window: NSWindow) {
@@ -52,6 +54,6 @@ public final class WindowManager: NSObject, WindowManaging, NSWindowDelegate {
     }
 
     private func id(of object: Any?) -> WindowID? {
-        windows.first { $0.value === object as? NSWindow }?.key
+        windows.first { $0.value.window === object as? NSWindow }?.key
     }
 }

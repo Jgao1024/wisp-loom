@@ -1,3 +1,5 @@
+import Observation
+
 public enum UITreeError: Error, Equatable {
     case unknownNode(String)
     case duplicateNode(String)
@@ -9,10 +11,11 @@ public enum UITreeError: Error, Equatable {
 /// Node table for one app window. Patches apply atomically: ops run against a `Draft` overlay and
 /// only a fully successful batch is written to the live nodes.
 @MainActor
+@Observable
 public final class UITree {
     public private(set) var root: UINode?
     public private(set) var rev = 0
-    private var nodes: [String: UINode] = [:]
+    @ObservationIgnored private var nodes: [String: UINode] = [:]
 
     public init() {}
 

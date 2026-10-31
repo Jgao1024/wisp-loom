@@ -1,4 +1,6 @@
 import AppKit
+import AppRuntime
+import OSLog
 import ShellCore
 import ShellPlatform
 import ShellUI
@@ -7,13 +9,18 @@ import SwiftUI
 @MainActor
 final class CompositionRoot {
     private let controller: ShellController
+    private let registry: AppRegistry
     private var statusItem: StatusItemController?
 
     init() {
+        let logger = Logger(subsystem: "com.example.wisploom", category: "apps")
         let factory = WindowFactory()
         let state = ShellState(
-            apps: AppDescriptor.samples, launcherStyle: .stored(in: .standard),
-            hotKey: .stored(in: .standard), language: .stored(in: .standard))
+            apps: [], launcherStyle: .stored(in: .standard), hotKey: .stored(in: .standard),
+            language: .stored(in: .standard))
+        let registry = AppRegistry(
+            state: state, dataRoot: Self.supportDirectory.appendingPathComponent("Data"),
+            log: { logger.info("\($0, privacy: .public)") })
         let windows = WindowManager(factory: factory)
         let presenter = ShellPresenter(factory: factory)
         let controller = ShellController(
@@ -21,10 +28,13 @@ final class CompositionRoot {
             onQuit: { NSApp.terminate(nil) })
         let send: (ShellAction) -> Void = { [weak controller] in controller?.dispatch($0) }
 
-        windows.contentProvider = { NSHostingController(rootView: AppWindowView(app: $0)) }
+        windows.contentProvider = { registry.makeContent(for: $0) }
+        windows.windowDidClose = { registry.windowClosed($0) }
         presenter.launcherContent = { NSHostingController(rootView: LauncherView(state: state, send: send)) }
         presenter.settingsContent = { NSHostingController(rootView: SettingsView(state: state, send: send)) }
+        controller.setApps(registry.load(from: Self.appRoots))
         self.controller = controller
+        self.registry = registry
     }
 
     func start() {
@@ -42,4 +52,22 @@ final class CompositionRoot {
     }
 
     func stop() { controller.stop() }
+
+    static var supportDirectory: URL {
+        URL.applicationSupportDirectory.appendingPathComponent("WispLoom")
+    }
+
+    /// docs/01-architecture.md §6: bundled → Application Support → user-added directories.
+    /// `WISP_APPS` replaces the whole list during development.
+    static var appRoots: [URL] {
+        if let override = ProcessInfo.processInfo.environment["WISP_APPS"] {
+            return [URL(fileURLWithPath: override)]
+        }
+        var roots = [
+            Bundle.main.resourceURL?.appendingPathComponent("Apps"), supportDirectory.appendingPathComponent("Apps"),
+        ]
+        let added = UserDefaults.standard.stringArray(forKey: "wisploom.appDirectories") ?? []
+        roots += added.map { URL(fileURLWithPath: $0) }
+        return roots.compactMap { $0 }
+    }
 }

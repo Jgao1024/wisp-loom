@@ -12,7 +12,7 @@ struct GridLauncher: View {
 
     private var categories: [String] {
         var seen = Set<String>()
-        return apps.map(\.category).filter { seen.insert($0).inserted }
+        return apps.map(\.category).filter { !$0.isEmpty && seen.insert($0).inserted }
     }
     private var results: [AppDescriptor] { apps.matching(query, category: category) }
 
