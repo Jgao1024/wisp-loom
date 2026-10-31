@@ -1,0 +1,17 @@
+{
+  "name": "wisp-loom",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test \"sdk/ts/test/*.test.ts\"",
+    "build:ui": "node scripts/build-ui.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2"
+  },
+  "workspaces": [
+    "sdk/ts"
+  ]
+}
